@@ -5,14 +5,19 @@ import json
 import re
 import logging
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from concurrent.futures import ThreadPoolExecutor
 import argparse
 from pymongo import MongoClient
 from datetime import datetime
 from json import JSONEncoder
 
-from bs4 import BeautifulSoup
+# Configure OpenBLAS to avoid warnings
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_MAIN_FREE"] = "1"
+os.environ["OMP_NUM_THREADS"] = "1"
+
+from bs4 import BeautifulSoup, Tag
 import spacy
 from spacy.language import Language
 
@@ -22,6 +27,9 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+MAX_CONTENT_LENGTH = 512  # Maximum content length in characters
+MAX_SENTENCES = 2        # Maximum number of sentences for summary
 
 class DateTimeEncoder(JSONEncoder):
     """Custom JSON encoder for datetime objects"""
@@ -39,14 +47,14 @@ class IndexEntry:
         IndexEntry._id_counter += 1       # Increment the counter for the next entry
         self.url = url
         self.title = title
-        self.content = content
+        self.content = content[:MAX_CONTENT_LENGTH] if content else ""  # Limit content length
         self.created_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()
 
     def to_dict(self):
         """Convert entry to dictionary with ISO format dates"""
         return {
-            'id': self.id,  # Include the unique ID in the output
+            'id': self.id,
             'url': self.url,
             'title': self.title,
             'content': self.content,
@@ -69,27 +77,101 @@ class TextSummarizer:
         """Initialize spaCy with error handling"""
         try:
             nlp = spacy.load("en_core_web_sm")
-            logger.info("Loaded spaCy model")
+            # Configure pipeline for better summarization
+            nlp.add_pipe("sentencizer")
+            logger.info("Loaded spaCy model with sentencizer")
             return nlp
         except OSError:
             logger.warning("SpaCy model 'en_core_web_sm' not found. Installing...")
             os.system("python -m spacy download en_core_web_sm")
-            return spacy.load("en_core_web_sm")
+            nlp = spacy.load("en_core_web_sm")
+            nlp.add_pipe("sentencizer")
+            return nlp
 
     @staticmethod
     def clean_text(text: str) -> str:
         """Clean and normalize text"""
-        text = re.sub(r'\b(menu|html|title|include)\b', '', text, flags=re.IGNORECASE)
-        text = re.sub(r'[^\w\s-]', ' ', text)
+        # Remove common HTML-related words
+        text = re.sub(r'\b(menu|html|title|include|nav|header|footer)\b', '', text, flags=re.IGNORECASE)
+        # Remove special characters but keep sentence structure
+        text = re.sub(r'[^\w\s\.\!\?-]', ' ', text)
+        # Replace multiple dashes with space
         text = re.sub(r'-+', ' ', text)
+        # Replace multiple spaces with single space
         text = re.sub(r'\s+', ' ', text)
-        return text.strip().lower()
+        # Replace multiple periods with single period
+        text = re.sub(r'\.+', '.', text)
+        return text.strip()
+
+    def extract_key_sentences(self, doc) -> List[str]:
+        """Extract key sentences based on position and length"""
+        sentences = list(doc.sents)
+        if not sentences:
+            return []
+
+        # Always include the first sentence
+        key_sentences = [sentences[0]]
+
+        # Add additional sentences based on length and content
+        for sent in sentences[1:]:
+            # Skip very short sentences
+            if len(sent.text.split()) < 3:
+                continue
+            # Skip sentences that are too similar to what we already have
+            if any(self.nlp(sent.text).similarity(self.nlp(existing.text)) > 0.7 
+                   for existing in key_sentences):
+                continue
+            key_sentences.append(sent)
+            if len(key_sentences) >= MAX_SENTENCES:
+                break
+
+        return [sent.text.strip() for sent in key_sentences]
 
     def summarize_text(self, text: str) -> str:
         """Summarize the text using spaCy"""
-        doc = self.nlp(text)
-        sentences = [sent.text.strip() for sent in doc.sents]
-        return ' '.join(sentences[:3])
+        try:
+            if not text.strip():
+                return ""
+                
+            doc = self.nlp(text)
+            key_sentences = self.extract_key_sentences(doc)
+            summary = ' '.join(key_sentences)
+            
+            # Ensure summary is within length limit
+            if len(summary) > MAX_CONTENT_LENGTH:
+                # Try to truncate at a sentence boundary
+                summary = summary[:MAX_CONTENT_LENGTH]
+                last_period = summary.rfind('.')
+                if last_period > 0:
+                    summary = summary[:last_period + 1]
+            
+            return summary.strip()
+        except Exception as e:
+            logger.error(f"Error summarizing text: {e}")
+            return text[:MAX_CONTENT_LENGTH]
+
+    def extract_text_from_html(self, soup: BeautifulSoup) -> str:
+        """Extract text from HTML while preserving important content"""
+        # First, store all <pre> tags content
+        pre_tags = soup.find_all('pre')
+        pre_contents = [tag.extract() for tag in pre_tags]  # Remove and save pre tags
+        
+        # Remove unwanted elements
+        for element in soup(['script', 'style', 'nav', 'footer', 'header']):
+            element.decompose()
+
+        # Get main content
+        content_areas = soup.find_all(['main', 'article', 'section'])
+        if content_areas:
+            text = ' '.join(area.get_text(separator=' ', strip=True) 
+                          for area in content_areas)
+        else:
+            text = soup.get_text(separator=' ', strip=True)
+
+        # Skip summarization for pre-formatted content
+        pre_texts = '\n'.join(pre.get_text() for pre in pre_contents)
+        
+        return f"{text}\n{pre_texts}" if pre_texts else text
 
     def process_html_file(self, file_path: Path) -> Optional[IndexEntry]:
         """Process a single HTML file and return a content entry"""
@@ -97,20 +179,16 @@ class TextSummarizer:
             logger.debug(f"Processing file: {file_path}")
             with open(file_path, 'r', encoding='utf-8') as f:
                 soup = BeautifulSoup(f, 'html.parser')
+                
+                # Extract text while preserving pre tags
+                extracted_text = self.extract_text_from_html(soup)
+                clean_text = self.clean_text(extracted_text)
 
-                # Remove script and style elements
-                for element in soup(['script', 'style']):
-                    element.decompose()
-
-                # Extract and clean text
-                body_text = soup.get_text(separator=' ', strip=True)
-                clean_body_text = self.clean_text(body_text)
-
-                if not clean_body_text:
+                if not clean_text:
                     logger.warning(f"Skipping {file_path}: No meaningful content")
                     return None
 
-                content = self.summarize_text(clean_body_text)
+                content = self.summarize_text(clean_text)
                 relative_path = str(file_path.relative_to(Path.cwd()))
                 url_path = f"https://kevinluzbetak.com/{relative_path}"
 
@@ -235,11 +313,28 @@ def main():
         action="store_true",
         help="Enable debug logging"
     )
+    parser.add_argument(
+        "--max-content-length",
+        type=int,
+        default=512,
+        help="Maximum length of content in characters"
+    )
+    parser.add_argument(
+        "--max-sentences",
+        type=int,
+        default=2,
+        help="Maximum number of sentences in summary"
+    )
 
     args = parser.parse_args()
 
     if args.debug:
         logger.setLevel(logging.DEBUG)
+
+    # Update global constants based on arguments
+    global MAX_CONTENT_LENGTH, MAX_SENTENCES
+    MAX_CONTENT_LENGTH = args.max_content_length
+    MAX_SENTENCES = args.max_sentences
 
     try:
         summarizer = TextSummarizer(args.output_dir, args.mongodb_uri)
@@ -250,4 +345,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
