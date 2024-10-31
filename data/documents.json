@@ -1,0 +1,186 @@
+[
+  {
+    "id": 9,
+    "url": "https://kevinluzbetak.com/html/Gunning-Fog-Index.html",
+    "title": "Gunning-Fog-Index.html",
+    "content": "Python Algorithms Gunning Fog Index The Gunning Fog Index is a readability test that estimates the years of formal education needed to understand a text on the first reading. exclamation mark !",
+    "created_at": "2024-10-31T17:24:58.730562",
+    "updated_at": "2024-10-31T17:24:58.730564"
+  },
+  {
+    "id": 4,
+    "url": "https://kevinluzbetak.com/html/NVIDIA-GeForce-RTX-3060-Installation.html",
+    "title": "NVIDIA-GeForce-RTX-3060-Installation.html",
+    "content": "GeForce RTX 3060 Installation Install NVIDIA GeForce RTX 3060 for Machine Learning Step 1 Prepare Your System Before installing the NVIDIA drivers update your system and install the necessary packages. Step 5 Enable Microphone on Chrome Insecure origins treated as secure http 192.168.1.190 8080 .",
+    "created_at": "2024-10-31T17:24:58.348677",
+    "updated_at": "2024-10-31T17:24:58.348680"
+  },
+  {
+    "id": 1,
+    "url": "https://kevinluzbetak.com/html/Python-Syntax-Highlighting.html",
+    "title": "Python-Syntax-Highlighting.html",
+    "content": "Kevin Luzbetak Computer Science Python Syntax Highlighting SQL Syntax Highlighting Bash Syntax Highlighting Golang Syntax Highlighting . def greet name print f",
+    "created_at": "2024-10-31T17:24:58.133129",
+    "updated_at": "2024-10-31T17:24:58.133131"
+  },
+  {
+    "id": 16,
+    "url": "https://kevinluzbetak.com/html/PyTorch-Sentiment-Analysis-Model.html",
+    "title": "PyTorch-Sentiment-Analysis-Model.html",
+    "content": "sentiment analysis model Build and Save Sentiment Model Use Sentiment Model Output . ! usr bin env python import torch from torch.utils.data import Dataset DataLoader from torch import nn from transformers import BertTokenizer BertModel from sklearn.metrics import accuracy_score classification_report",
+    "created_at": "2024-10-31T17:24:59.246998",
+    "updated_at": "2024-10-31T17:24:59.247000"
+  },
+  {
+    "id": 12,
+    "url": "https://kevinluzbetak.com/html/TF-IDF.html",
+    "title": "TF-IDF.html",
+    "content": "TF IDF TF IDF Value Breakdown Higher TF IDF values The higher the TF IDF score for a term in a document the more relevant or important that term is to that specific document. Range of TF IDF",
+    "created_at": "2024-10-31T17:24:58.891420",
+    "updated_at": "2024-10-31T17:24:58.891423"
+  },
+  {
+    "id": 2,
+    "url": "https://kevinluzbetak.com/html/Stable-Diffusion-Web-UI.html",
+    "title": "Stable-Diffusion-Web-UI.html",
+    "content": "Stable Diffusion Web UI Stable Diffusion Web UI 1. Launch the Web UI Run the following command to start the Web UI If you encounter the Torch is not able to use GPU error use this command 4.",
+    "created_at": "2024-10-31T17:24:58.245139",
+    "updated_at": "2024-10-31T17:24:58.245141"
+  },
+  {
+    "id": 5,
+    "url": "https://kevinluzbetak.com/html/Recompile-FAISS-GPU-Installation.html",
+    "title": "Recompile-FAISS-GPU-Installation.html",
+    "content": "Rebuild CUDA GPU FAISS GPU Installation Step 1 Install Dependencies Run the following commands to install the necessary dependencies Step 2 Install CUDA sudo apt get update sudo apt get install",
+    "created_at": "2024-10-31T17:24:58.422944",
+    "updated_at": "2024-10-31T17:24:58.422946"
+  },
+  {
+    "id": 3,
+    "url": "https://kevinluzbetak.com/html/Hugging-Face-Machine-Learning.html",
+    "title": "Hugging-Face-Machine-Learning.html",
+    "content": "Hugging Face Machine Learning Login to Hugging Face CLI If you haven t logged in yet authenticate via the command line This will prompt you to enter your Hugging Face token.",
+    "created_at": "2024-10-31T17:24:58.263636",
+    "updated_at": "2024-10-31T17:24:58.263638"
+  },
+  {
+    "id": 11,
+    "url": "https://kevinluzbetak.com/html/Time-Complexity-Big-O-Notation.html",
+    "title": "Time-Complexity-Big-O-Notation.html",
+    "content": "Kevin Luzbetak Computer Science Big O Notation Time Complexity Big O notation is used to describe the efficiency of an algorithm focusing on its time complexity how the execution time grows with input size and space complexity how much extra memory is needed .",
+    "created_at": "2024-10-31T17:24:58.791237",
+    "updated_at": "2024-10-31T17:24:58.791240"
+  },
+  {
+    "id": 8,
+    "url": "https://kevinluzbetak.com/html/Kevin_Luzbetak_Portfolio.html",
+    "title": "Kevin_Luzbetak_Portfolio.html",
+    "content": "Software and Data Engineering Summary Kevin has over 25 years of hands on experience as a software and data engineer with expertise in DevOps orchestration and deployment pipelines. Machine Learning AI",
+    "created_at": "2024-10-31T17:24:58.696081",
+    "updated_at": "2024-10-31T17:24:58.696083"
+  },
+  {
+    "id": 6,
+    "url": "https://kevinluzbetak.com/html/python-whoosh.html",
+    "title": "python-whoosh.html",
+    "content": "python whoosh Create Python BM25 Index Search Index BM25 Output . ! Document 3 content The fox is quick and jumps high.",
+    "created_at": "2024-10-31T17:24:58.433873",
+    "updated_at": "2024-10-31T17:24:58.433875"
+  },
+  {
+    "id": 10,
+    "url": "https://kevinluzbetak.com/html/Tensors-Machine-Learning.html",
+    "title": "Tensors-Machine-Learning.html",
+    "content": "Tensors Multi Dimensional Array Tensor in Machine In essence a tensor is a multidimensional array used to represent data. In this code Import the NumPy library.",
+    "created_at": "2024-10-31T17:24:58.751998",
+    "updated_at": "2024-10-31T17:24:58.752000"
+  },
+  {
+    "id": 22,
+    "url": "https://kevinluzbetak.com/html/Vector-Database.html",
+    "title": "Vector-Database.html",
+    "content": "Vector Database Vector Database A vector database is a specialized type of database designed to efficiently store retrieve and query data in vector format. Image Retrieval Perform similarity search based on image embeddings.",
+    "created_at": "2024-10-31T17:24:59.399207",
+    "updated_at": "2024-10-31T17:24:59.399210"
+  },
+  {
+    "id": 21,
+    "url": "https://kevinluzbetak.com/html/Keras.html",
+    "title": "Keras.html",
+    "content": "Keras Training Neural Networks Keras Overview Keras is an open source deep learning library that provides a high level API for building and training neural networks. Structure Input Layer",
+    "created_at": "2024-10-31T17:24:59.385138",
+    "updated_at": "2024-10-31T17:24:59.385142"
+  },
+  {
+    "id": 20,
+    "url": "https://kevinluzbetak.com/html/Random-Forest-Classifier-Model.html",
+    "title": "Random-Forest-Classifier-Model.html",
+    "content": "Random Forest Classifier Model Random Forest Classifieri with TF IDF Vectorizer This model consists of a collection of decision trees the forest where each tree is trained on a random subset of the data.",
+    "created_at": "2024-10-31T17:24:59.371260",
+    "updated_at": "2024-10-31T17:24:59.371263"
+  },
+  {
+    "id": 18,
+    "url": "https://kevinluzbetak.com/html/Scikit-learn.html",
+    "title": "Scikit-learn.html",
+    "content": "Scikit learn Scikit learn Overview Scikit learn is a widely used open source Python library for machine learning providing simple and efficient tools for data analysis and modeling. Initializes and trains a Random Forest classifier.",
+    "created_at": "2024-10-31T17:24:59.349431",
+    "updated_at": "2024-10-31T17:24:59.349435"
+  },
+  {
+    "id": 13,
+    "url": "https://kevinluzbetak.com/html/bm25-probabilistic-information-retrieval-model.html",
+    "title": "bm25-probabilistic-information-retrieval-model.html",
+    "content": "bm25 probabilistic information retrieval model BM25 Best Matching 25 is a ranking function used by search engines to rank documents based on their relevance to a given query. BM25 D Q t Q IDF t f t D k1 1 f t D k1 1 b b D avgdl IDF t log N nt 0.5 nt 0.5 1",
+    "created_at": "2024-10-31T17:24:59.149450",
+    "updated_at": "2024-10-31T17:24:59.149452"
+  },
+  {
+    "id": 7,
+    "url": "https://kevinluzbetak.com/html/Streamlit-app.html",
+    "title": "Streamlit-app.html",
+    "content": "Streamlit app Streamlit App Enter your name Select your age 25 Hello Kevin! Line Chart A B C 0.17 0.57 1.22 0.47 1.11 0.34 0.33 0.88 0.45 1.12 1.34 0.76 1.02 0.66 0.99 . !",
+    "created_at": "2024-10-31T17:24:58.659899",
+    "updated_at": "2024-10-31T17:24:58.659901"
+  },
+  {
+    "id": 15,
+    "url": "https://kevinluzbetak.com/html/Retrieval-Augmented-Generation.html",
+    "title": "Retrieval-Augmented-Generation.html",
+    "content": "RAG Retrieval Augmented Generation Building a High Performance RAG Solution with Pgvectorscale and Python 1. tokenizer prompt return_tensors pt outputs model.generate inputs input_ids max_length 500 response tokenizer.decode outputs 0 print response",
+    "created_at": "2024-10-31T17:24:59.199942",
+    "updated_at": "2024-10-31T17:24:59.199943"
+  },
+  {
+    "id": 14,
+    "url": "https://kevinluzbetak.com/html/PyTorch.html",
+    "title": "PyTorch.html",
+    "content": "PyTorch Neural Network PyTorch Machine Learning Library PyTorch is an open source machine learning library used for a wide variety of tasks such as deep learning natural language processing NLP and computer vision. usr bin env python import torch import torch.nn as nn import torch.optim as optim import torchvision import torchvision.transforms as transforms Define a simple neural network class Net nn.Module def __init__",
+    "created_at": "2024-10-31T17:24:59.192483",
+    "updated_at": "2024-10-31T17:24:59.192486"
+  },
+  {
+    "id": 19,
+    "url": "https://kevinluzbetak.com/html/faiss/Indexing-FAISS-OpenAI-Embeddings.html",
+    "title": "Indexing-FAISS-OpenAI-Embeddings.html",
+    "content": "Email Processing with FAISS and OpenAI Embeddings Email Processing with FAISS and OpenAI Embeddings Description This Python script performs the following tasks Loads email data from a JSON file full_emails.json . page_content .content metadata id .id date .date",
+    "created_at": "2024-10-31T17:24:59.362167",
+    "updated_at": "2024-10-31T17:24:59.362171"
+  },
+  {
+    "id": 23,
+    "url": "https://kevinluzbetak.com/html/faiss/RetrievalQA-FAISS-with-OpenAI-GPT-4.html",
+    "title": "RetrievalQA-FAISS-with-OpenAI-GPT-4.html",
+    "content": "FAISS Retrieval QA with OpenAI GPT 4 RetrievalQA? RetrievalQA is a specialized question answering framework that leverages retrievers like FAISS or vector databases to find relevant documents or text snippets based on a query and then uses language models LLMs to generate answers based on the retrieved content.",
+    "created_at": "2024-10-31T17:24:59.404617",
+    "updated_at": "2024-10-31T17:24:59.404619"
+  },
+  {
+    "id": 17,
+    "url": "https://kevinluzbetak.com/html/faiss/Gmail-Email-Fetch.html",
+    "title": "Gmail-Email-Fetch.html",
+    "content": "Gmail Email Fetch Gmail Email Fetch Script Description This Python script uses the Gmail API to authenticate a user and retrieve the last 1000 emails from their Gmail account. Example Output ID Snippet Internal Date Payload 1782345678abcdef",
+    "created_at": "2024-10-31T17:24:59.304407",
+    "updated_at": "2024-10-31T17:24:59.304410"
+  }
+]
