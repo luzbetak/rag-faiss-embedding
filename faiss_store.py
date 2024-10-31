@@ -5,8 +5,9 @@ import faiss
 import numpy as np
 from loguru import logger
 from typing import Tuple, List, Optional
+import pickle
 
-class FAISSVectorStore:  # Changed class name to match imports
+class FAISSVectorStore:
     def __init__(self, dimension: int = 384, index_path: str = "data/faiss_index.bin"):
         """Initialize FAISS store with given dimension"""
         self.dimension = dimension
@@ -19,7 +20,7 @@ class FAISSVectorStore:  # Changed class name to match imports
             self.load_index()
         logger.info(f"Initialized FAISS index with dimension {dimension}")
 
-    def add_vectors(self, vectors: np.ndarray, ids: List[str]):
+    def add_vectors(self, vectors: np.ndarray, ids: List[int]):
         """Add vectors to the index with their corresponding IDs"""
         if isinstance(vectors, list):
             vectors = np.array(vectors, dtype=np.float32)
@@ -27,15 +28,17 @@ class FAISSVectorStore:  # Changed class name to match imports
         if len(vectors.shape) == 1:
             vectors = vectors.reshape(1, -1)
             
-        self.index.add(vectors)
+        # Store the actual document IDs
         self.doc_ids.extend(ids)
-        logger.info(f"Added {len(ids)} vectors to FAISS index")
+        self.index.add(vectors)
+        logger.info(f"Added {len(ids)} vectors to FAISS index with IDs: {ids}")
 
-    def search(self, query_vector: np.ndarray, k: int = 5) -> Tuple[np.ndarray, List[str]]:
+    def search(self, query_vector: np.ndarray, k: int = 5) -> Tuple[np.ndarray, List[int]]:
         """Search for similar vectors in the index"""
         try:
             logger.info(f"Searching FAISS index with k={k}")
             logger.info(f"Index contains {self.index.ntotal} vectors")
+            logger.info(f"Document IDs mapping: {self.doc_ids}")
             
             # Convert query_vector to numpy array if it's a list
             if isinstance(query_vector, list):
@@ -46,7 +49,7 @@ class FAISSVectorStore:  # Changed class name to match imports
             
             # Perform search
             distances, indices = self.index.search(query_vector, k)
-            logger.info(f"Raw FAISS results - distances: {distances}, indices: {indices}")
+            logger.info(f"Raw FAISS results - distances: {distances}, indices: {indices[0]}")
             
             # Map FAISS indices to document IDs
             doc_ids = []
@@ -55,7 +58,9 @@ class FAISSVectorStore:  # Changed class name to match imports
                 if idx != -1 and idx < len(self.doc_ids):
                     doc_ids.append(self.doc_ids[idx])
                     valid_distances.append(distances[0][i])
-                    
+                    logger.info(f"Mapped FAISS index {idx} to document ID {self.doc_ids[idx]}")
+            
+            logger.info(f"Mapped to document IDs: {doc_ids}")
             return np.array(valid_distances), doc_ids
             
         except Exception as e:
@@ -63,18 +68,43 @@ class FAISSVectorStore:  # Changed class name to match imports
             return np.array([]), []
 
     def save_index(self, filepath: Optional[str] = None):
-        """Save FAISS index to disk"""
+        """Save FAISS index and ID mapping to disk"""
         save_path = filepath or self.index_path
+        mapping_path = save_path + '.mapping'
+        
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        
+        # Save FAISS index
         faiss.write_index(self.index, save_path)
+        
+        # Save ID mapping
+        with open(mapping_path, 'wb') as f:
+            pickle.dump(self.doc_ids, f)
+            
         logger.info(f"Saved FAISS index to {save_path}")
+        logger.info(f"Saved ID mapping to {mapping_path}")
 
     def load_index(self, filepath: Optional[str] = None):
-        """Load FAISS index from disk"""
+        """Load FAISS index and ID mapping from disk"""
         load_path = filepath or self.index_path
+        mapping_path = load_path + '.mapping'
+        
         try:
+            # Load FAISS index
             self.index = faiss.read_index(load_path)
-            logger.info(f"Loaded FAISS index from {load_path}")
+            
+            # Load ID mapping if it exists
+            if os.path.exists(mapping_path):
+                with open(mapping_path, 'rb') as f:
+                    self.doc_ids = pickle.load(f)
+                logger.info(f"Loaded ID mapping from {mapping_path}: {self.doc_ids}")
+            else:
+                # Create sequential IDs if no mapping file exists
+                self.doc_ids = list(range(self.index.ntotal))
+                logger.warning(f"No mapping file found. Created sequential IDs: {self.doc_ids}")
+            
+            logger.info(f"Loaded FAISS index from {load_path} with {len(self.doc_ids)} document mappings")
+            
         except Exception as e:
             logger.error(f"Error loading FAISS index: {e}")
             raise

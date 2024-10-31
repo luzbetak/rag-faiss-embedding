@@ -37,13 +37,15 @@ class QueryEngine:
             
             # Get similar documents using FAISS
             logger.info(f"Searching for similar documents with top_k={top_k}")
-            distances, doc_indices = self.db.vector_store.search(query_embedding, top_k)
+            distances, indices = self.db.vector_store.search(query_embedding, top_k)
             
             # Fetch documents from SQLite
             similar_docs = []
-            for idx, distance in zip(doc_indices, distances):
-                doc = self.db.get_document_by_id(int(idx))
+            for idx, distance in zip(indices, distances):
+                # Add 1 to idx since SQLite IDs start at 1
+                doc = self.db.get_document_by_id(int(idx) + 1)
                 if doc:
+                    # Convert distance to similarity score (1 / (1 + distance))
                     doc["score"] = float(1.0 / (1.0 + distance))
                     similar_docs.append(doc)
                     logger.info(f"Found document {doc['id']} with score {doc['score']:.3f}")

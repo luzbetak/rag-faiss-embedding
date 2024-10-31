@@ -47,15 +47,18 @@ class Database:
 
     def get_document_by_id(self, doc_id: int) -> Optional[Dict]:
         """Fetch a document by its ID"""
-        self.cursor.execute('SELECT * FROM documents WHERE id = ?', (doc_id,))
-        row = self.cursor.fetchone()
-        if row:
-            return {
-                "id": row[0],
-                "url": row[1],
-                "title": row[2],
-                "content": row[3]
-            }
+        try:
+            self.cursor.execute('SELECT * FROM documents WHERE id = ?', (doc_id,))
+            row = self.cursor.fetchone()
+            if row:
+                return {
+                    "id": row[0],
+                    "url": row[1],
+                    "title": row[2],
+                    "content": row[3]
+                }
+        except sqlite3.Error as e:
+            logger.error(f"Error fetching document {doc_id}: {e}")
         return None
 
     def get_document_count(self) -> int:
@@ -63,8 +66,25 @@ class Database:
         self.cursor.execute('SELECT COUNT(*) FROM documents')
         return self.cursor.fetchone()[0]
 
+    def load_vector_store(self, filepath: str):
+        """Load FAISS index from disk"""
+        try:
+            self.vector_store.load_index(filepath)
+            logger.info(f"Loaded vector store from {filepath}")
+        except Exception as e:
+            logger.error(f"Error loading vector store: {e}")
+            raise
+
+    def save_vector_store(self, filepath: str):
+        """Save FAISS index to disk"""
+        try:
+            self.vector_store.save_index(filepath)
+            logger.info(f"Saved vector store to {filepath}")
+        except Exception as e:
+            logger.error(f"Error saving vector store: {e}")
+            raise
+
     def close(self):
         """Close database connection"""
         self.conn.close()
         logger.info("Database connection closed")
-
