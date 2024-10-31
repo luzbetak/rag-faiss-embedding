@@ -11,7 +11,6 @@ import argparse
 from pymongo import MongoClient
 from datetime import datetime
 from json import JSONEncoder
-import uuid
 
 from bs4 import BeautifulSoup
 import spacy
@@ -34,7 +33,6 @@ class DateTimeEncoder(JSONEncoder):
 class IndexEntry:
     """Data class for storing content data"""
     def __init__(self, url: str, title: str, content: str):
-        self.id = str(uuid.uuid4())  # Generate a unique ID
         self.url = url
         self.title = title
         self.content = content
@@ -44,7 +42,6 @@ class IndexEntry:
     def to_dict(self):
         """Convert entry to dictionary with ISO format dates"""
         return {
-            'id': self.id,  # Include the unique ID in the output
             'url': self.url,
             'title': self.title,
             'content': self.content,
@@ -248,4 +245,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
