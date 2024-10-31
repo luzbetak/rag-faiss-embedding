@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# query.py
 
 import os
 from contextlib import asynccontextmanager
@@ -11,6 +10,7 @@ from database import Database
 from vectorization import VectorizationPipeline
 from transformers import pipeline
 from config import Config
+import numpy as np
 
 # Set OpenBLAS environment variables
 os.environ.update({
@@ -21,30 +21,6 @@ os.environ.update({
 
 # Global QueryEngine instance
 query_engine = None
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Lifespan manager for the FastAPI application"""
-    global query_engine
-    
-    # Startup
-    logger.info("Initializing RAG Search API...")
-    query_engine = QueryEngine()
-    
-    yield
-    
-    # Shutdown
-    logger.info("Shutting down RAG Search API...")
-    if query_engine:
-        query_engine.close()
-
-# Initialize FastAPI app with lifespan
-app = FastAPI(
-    title="RAG Search API",
-    description="API for vector similarity search and response generation",
-    version="1.0.0",
-    lifespan=lifespan
-)
 
 class SearchRequest(BaseModel):
     text: str
@@ -67,30 +43,44 @@ class QueryEngine:
     async def search(self, query: str, top_k: int = Config.TOP_K) -> List[Dict]:
         """Perform vector similarity search"""
         try:
-            # Generate query embedding
-            query_embedding = self.vectorization.generate_embeddings([query])[0]
-            
             # Log the search request
-            logger.info(f"Searching for: {query}")
+            logger.info(f"Processing search query: {query}")
             
-            # Get similar documents using FAISS/MongoDB hybrid search
+            # Verify database connection
+            doc_count = self.db.collection.count_documents({})
+            logger.info(f"Total documents in database: {doc_count}")
+            
+            # Generate query embedding
+            logger.info("Generating query embedding...")
+            query_embedding = self.vectorization.generate_embeddings([query])[0]
+            logger.info(f"Generated embedding of length: {len(query_embedding)}")
+            
+            # Get similar documents
+            logger.info(f"Searching for similar documents with top_k={top_k}")
             similar_docs = self.db.get_similar_documents(
                 query_embedding=query_embedding,
                 top_k=top_k
             )
             
-            logger.info(f"Found {len(similar_docs)} similar documents")
+            if similar_docs:
+                logger.info(f"Found {len(similar_docs)} similar documents")
+                for i, doc in enumerate(similar_docs, 1):
+                    logger.info(f"Document {i} - Score: {doc.get('score', 0):.3f}, "
+                              f"Title: {doc.get('title', 'N/A')}")
+            else:
+                logger.warning("No similar documents found")
             
             return similar_docs
             
         except Exception as e:
-            logger.error(f"Search error: {str(e)}")
+            logger.exception(f"Search error: {str(e)}")
             raise
 
     async def generate_response(self, query: str, documents: List[Dict]) -> str:
         """Generate a response based on the query and retrieved documents"""
         try:
             if not documents:
+                logger.info("No documents available for response generation")
                 return "No relevant documents found to answer your query."
                 
             # Format context from documents
@@ -112,25 +102,57 @@ class QueryEngine:
                 f"Answer:"
             )
             
-            # Generate response
+            logger.info("Generating response...")
             response = self.generator(prompt)[0]['generated_text']
+            logger.info("Response generated successfully")
             
             return response.strip()
             
         except Exception as e:
-            logger.error(f"Response generation error: {str(e)}")
+            logger.exception(f"Response generation error: {str(e)}")
             return "I apologize, but I encountered an error generating a response."
 
     def close(self):
         """Cleanup resources"""
-        self.db.close()
+        try:
+            self.db.close()
+            logger.info("Query engine resources cleaned up")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+
+# Define lifespan context manager
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan manager for the FastAPI application"""
+    global query_engine
+    
+    # Startup
+    logger.info("Initializing RAG Search API...")
+    query_engine = QueryEngine()
+    
+    yield
+    
+    # Shutdown
+    logger.info("Shutting down RAG Search API...")
+    if query_engine:
+        query_engine.close()
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="RAG Search API",
+    description="API for vector similarity search and response generation",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
+    doc_count = query_engine.db.collection.count_documents({})
     return {
         "status": "healthy",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "documents_count": doc_count
     }
 
 @app.post("/search", response_model=SearchResponse)
@@ -149,16 +171,13 @@ async def search(request: SearchRequest):
             documents=similar_docs
         )
         
-        # Log the response size
-        logger.info(f"Returning {len(similar_docs)} documents with response")
-        
         return SearchResponse(
             similar_documents=similar_docs,
             generated_response=generated_response
         )
         
     except Exception as e:
-        logger.error(f"Search error: {str(e)}")
+        logger.exception(f"Search error: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Error processing search request: {str(e)}"

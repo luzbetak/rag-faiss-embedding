@@ -54,30 +54,49 @@ class FAISSVectorStore:
         except Exception as e:
             logger.error(f"Error adding vectors: {e}")
             raise
-    
+
+
     def search(self, query_vector: List[float], k: int = 5) -> Tuple[List[float], List[str]]:
         """Search for similar vectors"""
         try:
+            # Check index state
+            if self.index.ntotal == 0:
+                logger.warning("FAISS index is empty")
+                return [], []
+    
+            # Log search parameters
+            logger.info(f"Searching FAISS index with k={k}")
+            logger.info(f"Index contains {self.index.ntotal} vectors")
+    
+            # Convert query vector to correct format
             query_np = np.array([query_vector]).astype('float32')
+    
+            # Perform search
             distances, faiss_ids = self.index.search(query_np, k)
-            
-            # Filter valid results and convert IDs
+    
+            # Log raw results
+            logger.info(f"Raw FAISS results - distances: {distances[0]}, ids: {faiss_ids[0]}")
+    
+            # Filter and convert results
             valid_results = []
             valid_distances = []
-            
+    
             for dist, idx in zip(distances[0], faiss_ids[0]):
                 if idx != -1:  # Valid FAISS ID
                     mongo_id = self.id_mapping.get(int(idx))
                     if mongo_id:
                         valid_results.append(mongo_id)
                         valid_distances.append(float(dist))
-            
-            return valid_distances, valid_results
-            
-        except Exception as e:
-            logger.error(f"Search error: {e}")
-            return [], []
+                        logger.debug(f"Valid result - distance: {dist:.3f}, mongo_id: {mongo_id}")
     
+            logger.info(f"Found {len(valid_results)} valid results")
+    
+            return valid_distances, valid_results
+    
+        except Exception as e:
+            logger.exception(f"FAISS search error: {e}")
+            return [], []
+
     def save_index(self, filepath: str):
         """Save FAISS index to disk"""
         try:
