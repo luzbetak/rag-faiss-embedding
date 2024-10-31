@@ -153,7 +153,7 @@ class TextSummarizer:
         """Write the summaries to a JSON file"""
         try:
             self.output_dir.mkdir(parents=True, exist_ok=True)
-            output_file = self.output_dir / "search-index.json"
+            output_file = self.output_dir / "documents.json"
             
             valid_entries = [
                 entry.to_dict() for entry in entries
