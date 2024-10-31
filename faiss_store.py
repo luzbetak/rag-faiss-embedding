@@ -1,121 +1,86 @@
 # faiss_store.py
+
+import os
 import faiss
 import numpy as np
-from typing import List, Tuple
 from loguru import logger
-import os
+from typing import Tuple, List, Optional
 
-class FAISSVectorStore:
-    def __init__(self, dimension: int, index_type: str = "L2"):
-        """Initialize FAISS vector store"""
+class FAISSStore:
+    def __init__(self, dimension: int = 384, index_path: str = "data/faiss_index.bin"):
+        """Initialize FAISS store with given dimension"""
         self.dimension = dimension
-        self.index_type = index_type
-
-        # Create base FAISS index
-        if index_type == "L2":
-            base_index = faiss.IndexFlatL2(dimension)
-        elif index_type == "IP":
-            base_index = faiss.IndexFlatIP(dimension)
-        else:
-            raise ValueError("index_type must be 'L2' or 'IP'")
+        self.index_path = index_path
+        self.doc_ids = []  # To store mapping between FAISS and database IDs
         
-        # Wrap with IDMap to support add_with_ids
-        self.index = faiss.IndexIDMap(base_index)
-
-        # Initialize ID mappings
-        self.id_mapping = {}
-        self.next_id = 0
-        
+        # Create L2 index
+        self.index = faiss.IndexFlatL2(dimension)
+        if os.path.exists(index_path):
+            self.load_index()
         logger.info(f"Initialized FAISS index with dimension {dimension}")
 
-    def add_vectors(self, vectors: List[List[float]], mongo_ids: List[str]):
-        """Add vectors to the FAISS index"""
-        if not vectors or not mongo_ids:
-            logger.warning("No vectors or IDs provided")
-            return
+    def add_vectors(self, vectors: np.ndarray, ids: List[str]):
+        """Add vectors to the index with their corresponding IDs"""
+        if isinstance(vectors, list):
+            vectors = np.array(vectors, dtype=np.float32)
+        
+        if len(vectors.shape) == 1:
+            vectors = vectors.reshape(1, -1)
+            
+        self.index.add(vectors)
+        self.doc_ids.extend(ids)
+        logger.info(f"Added {len(ids)} vectors to FAISS index")
 
-        if len(vectors) != len(mongo_ids):
-            raise ValueError("Number of vectors and IDs must match")
-
+    def search(self, query_vector: np.ndarray, k: int = 5) -> Tuple[np.ndarray, List[str]]:
+        """Search for similar vectors in the index"""
         try:
-            vectors_np = np.array(vectors).astype('float32')
-            faiss_ids = np.arange(self.next_id, self.next_id + len(vectors), dtype='int64')
-
-            # Add to FAISS index
-            self.index.add_with_ids(vectors_np, faiss_ids)
-
-            # Update mapping and add debug logging for each ID mapping
-            for faiss_id, mongo_id in zip(faiss_ids, mongo_ids):
-                self.id_mapping[int(faiss_id)] = mongo_id
-                logger.debug(f"Mapping FAISS ID {faiss_id} to MongoDB ID {mongo_id}")
-
-            self.next_id += len(vectors)
-            logger.info(f"Added {len(vectors)} vectors to FAISS index")
-
-        except Exception as e:
-            logger.error(f"Error adding vectors: {e}")
-            raise
-
-    def search(self, query_vector: List[float], k: int = 5) -> Tuple[List[float], List[str]]:
-        """Search for similar vectors"""
-        try:
-            # Check index state
-            if self.index.ntotal == 0:
-                logger.warning("FAISS index is empty")
-                return [], []
-
-            # Log search parameters
             logger.info(f"Searching FAISS index with k={k}")
             logger.info(f"Index contains {self.index.ntotal} vectors")
-
-            # Convert query vector to correct format
-            query_np = np.array([query_vector]).astype('float32')
-
+            
+            # Convert query_vector to numpy array if it's a list
+            if isinstance(query_vector, list):
+                query_vector = np.array(query_vector, dtype=np.float32)
+            
+            # Ensure vector has correct shape
+            query_vector = query_vector.reshape(1, -1)
+            
             # Perform search
-            distances, faiss_ids = self.index.search(query_np, k)
-
-            # Log raw results
-            logger.info(f"Raw FAISS results - distances: {distances[0]}, ids: {faiss_ids[0]}")
-
-            # Filter and convert results
-            valid_results = []
+            distances, indices = self.index.search(query_vector, k)
+            logger.info(f"Raw FAISS results - distances: {distances}, indices: {indices}")
+            
+            # Map FAISS indices to document IDs
+            doc_ids = []
             valid_distances = []
-
-            for dist, idx in zip(distances[0], faiss_ids[0]):
-                if idx != -1:  # Valid FAISS ID
-                    mongo_id = self.id_mapping.get(int(idx))
-                    if mongo_id:
-                        valid_results.append(mongo_id)
-                        valid_distances.append(float(dist))
-                        logger.debug(f"Valid result - distance: {dist:.3f}, mongo_id: {mongo_id}")
-                    else:
-                        logger.warning(f"No MongoDB ID found for FAISS ID {idx}")
-
-            logger.info(f"Found {len(valid_results)} valid results")
-
-            return valid_distances, valid_results
-
+            for i, idx in enumerate(indices[0]):
+                if idx != -1 and idx < len(self.doc_ids):
+                    doc_ids.append(self.doc_ids[idx])
+                    valid_distances.append(distances[0][i])
+                    
+            return np.array(valid_distances), doc_ids
+            
         except Exception as e:
-            logger.exception(f"FAISS search error: {e}")
-            return [], []
+            logger.error(f"Error during FAISS search: {e}")
+            return np.array([]), []
 
-    def save_index(self, filepath: str):
+    def save_index(self, filepath: Optional[str] = None):
         """Save FAISS index to disk"""
-        try:
-            # Create directory if it doesn't exist
-            os.makedirs(os.path.dirname(filepath), exist_ok=True)
-            faiss.write_index(self.index, filepath)
-            logger.info(f"Saved FAISS index to {filepath}")
-        except Exception as e:
-            logger.error(f"Error saving index: {e}")
-            raise
+        save_path = filepath or self.index_path
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        faiss.write_index(self.index, save_path)
+        logger.info(f"Saved FAISS index to {save_path}")
 
-    def load_index(self, filepath: str):
+    def load_index(self, filepath: Optional[str] = None):
         """Load FAISS index from disk"""
+        load_path = filepath or self.index_path
         try:
-            self.index = faiss.read_index(filepath)
-            logger.info(f"Loaded FAISS index from {filepath}")
+            self.index = faiss.read_index(load_path)
+            logger.info(f"Loaded FAISS index from {load_path}")
         except Exception as e:
-            logger.error(f"Error loading index: {e}")
+            logger.error(f"Error loading FAISS index: {e}")
             raise
 
+    def reset(self):
+        """Reset the index"""
+        self.index = faiss.IndexFlatL2(self.dimension)
+        self.doc_ids = []
+        logger.info("Reset FAISS index")
