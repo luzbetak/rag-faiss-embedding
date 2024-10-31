@@ -1,29 +1,48 @@
 # vectorization.py
-from typing import List, Dict, Any
-from sentence_transformers import SentenceTransformer
-from config import Config
-from database import Database
+
+from transformers import AutoTokenizer, AutoModel
+import torch
+import numpy as np
 from loguru import logger
+from typing import List
+from tqdm import tqdm
 
 class VectorizationPipeline:
-    def __init__(self):
-        self.model = SentenceTransformer(Config.MODEL_NAME)
-        self.db = Database()
+    def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2"):
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.model = AutoModel.from_pretrained(model_name)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model.to(self.device)
         logger.info("Initialized vectorization pipeline")
-    
-    def generate_embeddings(self, texts: List[str]) -> List[List[float]]:
-        """Generate embeddings for a batch of texts"""
+
+    @torch.no_grad()
+    def generate_embeddings(self, texts: List[str], batch_size: int = 32) -> np.ndarray:
+        """Generate embeddings for a list of texts"""
         logger.info(f"Generating embeddings for {len(texts)} texts")
-        embeddings = self.model.encode(
-            texts,
-            batch_size=Config.BATCH_SIZE,
-            show_progress_bar=True
-        )
-        return embeddings.tolist()
-    
-    def process_documents(self, documents: List[Dict[str, Any]]):
-        """Process documents and store with embeddings"""
-        texts = [doc.get('content', '') for doc in documents]
-        embeddings = self.generate_embeddings(texts)
-        self.db.batch_store_documents(documents, embeddings)
+        embeddings = []
+        
+        # Process in batches
+        for i in tqdm(range(0, len(texts), batch_size), desc="Batches"):
+            batch_texts = texts[i:i + batch_size]
+            
+            # Tokenize
+            encoded = self.tokenizer(
+                batch_texts,
+                padding=True,
+                truncation=True,
+                max_length=512,
+                return_tensors="pt"
+            )
+            
+            # Move to device
+            encoded = {k: v.to(self.device) for k, v in encoded.items()}
+            
+            # Get embeddings
+            outputs = self.model(**encoded)
+            
+            # Use CLS token embeddings
+            batch_embeddings = outputs.last_hidden_state[:, 0].cpu().numpy()
+            embeddings.extend(batch_embeddings)
+        
+        return np.array(embeddings)
 

@@ -6,7 +6,7 @@ import numpy as np
 from loguru import logger
 from typing import Tuple, List, Optional
 
-class FAISSStore:
+class FAISSVectorStore:  # Changed class name to match imports
     def __init__(self, dimension: int = 384, index_path: str = "data/faiss_index.bin"):
         """Initialize FAISS store with given dimension"""
         self.dimension = dimension

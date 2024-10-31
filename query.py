@@ -1,66 +1,16 @@
-#!/usr/bin/env python3
 # query.py
 
-import os
-import sqlite3
-from pathlib import Path
-import numpy as np
 from loguru import logger
-from typing import List, Dict, Optional
-from faiss_store import FAISSStore
+from typing import List, Dict
+from database import Database
 from vectorization import VectorizationPipeline
 from transformers import pipeline
-
-class Database:
-    def __init__(self, db_path: str = "data/documents.db"):
-        """Initialize SQLite database connection"""
-        self.db_path = db_path
-        Path(db_path).parent.mkdir(exist_ok=True)
-        self.conn = sqlite3.connect(db_path)
-        self.cursor = self.conn.cursor()
-        self._create_table()
-        logger.info("Initialized SQLite3 database")
-
-    def _create_table(self):
-        """Create documents table if it doesn't exist"""
-        self.cursor.execute('''
-        CREATE TABLE IF NOT EXISTS documents (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            url TEXT UNIQUE,
-            title TEXT,
-            content TEXT
-        )
-        ''')
-        self.conn.commit()
-
-    def get_document_count(self) -> int:
-        """Get total number of documents in database"""
-        self.cursor.execute('SELECT COUNT(*) FROM documents')
-        return self.cursor.fetchone()[0]
-
-    def get_document_by_id(self, doc_id: int) -> Optional[Dict]:
-        """Fetch a document by its ID"""
-        self.cursor.execute('SELECT * FROM documents WHERE id = ?', (doc_id,))
-        row = self.cursor.fetchone()
-        if row:
-            return {
-                "id": row[0],
-                "url": row[1],
-                "title": row[2],
-                "content": row[3]
-            }
-        return None
-
-    def close(self):
-        """Close database connection"""
-        self.conn.close()
-        logger.info("Database connection closed")
+import numpy as np
 
 class QueryEngine:
     def __init__(self):
         """Initialize the query engine with necessary components"""
         self.db = Database()
-        self.faiss_store = FAISSStore()
         self.vectorization = VectorizationPipeline()
         self.generator = pipeline('text2text-generation', 
                                 model='google/flan-t5-base', 
@@ -87,15 +37,12 @@ class QueryEngine:
             
             # Get similar documents using FAISS
             logger.info(f"Searching for similar documents with top_k={top_k}")
-            distances, doc_indices = self.faiss_store.search(query_embedding, top_k)
+            distances, doc_indices = self.db.vector_store.search(query_embedding, top_k)
             
             # Fetch documents from SQLite
             similar_docs = []
             for idx, distance in zip(doc_indices, distances):
-                if isinstance(idx, str):  # If using string IDs
-                    doc = self.db.get_document_by_id(int(idx))
-                else:  # If using integer IDs
-                    doc = self.db.get_document_by_id(int(idx + 1))  # Add 1 for SQLite IDs
+                doc = self.db.get_document_by_id(int(idx))
                 if doc:
                     doc["score"] = float(1.0 / (1.0 + distance))
                     similar_docs.append(doc)
@@ -155,4 +102,3 @@ class QueryEngine:
             logger.info("Query engine resources cleaned up")
         except Exception as e:
             logger.error(f"Error during cleanup: {e}")
-
