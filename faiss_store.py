@@ -108,7 +108,7 @@ class FAISSVectorStore:
         """Load FAISS index from disk"""
         try:
             logger.debug(f"Loading index from {filepath}")
-            self.index = faiss.read_index(filepath)
+            self.index = faiss.read_index(str(filepath))
             logger.info(f"Loaded FAISS index - total vectors: {self.index.ntotal}")
             
         except Exception as e:
