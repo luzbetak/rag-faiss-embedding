@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -33,40 +34,94 @@ class SearchResponse(BaseModel):
 class QueryEngine:
     def __init__(self):
         """Initialize the query engine with necessary components"""
-        self.db = Database()
-        self.vectorization = VectorizationPipeline()
-        self.generator = pipeline('text2text-generation', 
-                                model='google/flan-t5-base', 
-                                max_length=200)
-        logger.info("Query engine initialized")
+        try:
+            # Initialize components
+            self.db = Database()
+            self.vectorization = VectorizationPipeline()
+            
+            # Load FAISS index if exists
+            faiss_path = Config.FAISS_INDEX_PATH
+            if faiss_path.exists():
+                logger.info(f"Loading FAISS index from {faiss_path}")
+                self.db.load_vector_store(str(faiss_path))
+                vector_count = self.db.vector_store.index.ntotal
+                logger.info(f"FAISS index loaded with {vector_count} vectors")
+            else:
+                logger.error(f"FAISS index not found at {faiss_path}")
+                raise FileNotFoundError(f"FAISS index not found at {faiss_path}")
+
+            # Initialize text generation
+            logger.info("Initializing text generation model...")
+            self.generator = pipeline('text2text-generation', 
+                                   model='google/flan-t5-base', 
+                                   max_length=200)
+            
+            # Verify initialization
+            doc_count = self.db.collection.count_documents({})
+            vector_count = self.db.vector_store.index.ntotal
+            
+            logger.info("Query engine initialization complete:")
+            logger.info(f"- MongoDB documents: {doc_count}")
+            logger.info(f"- FAISS vectors: {vector_count}")
+            logger.info(f"- Vector dimension: {Config.VECTOR_DIMENSION}")
+            
+            if doc_count == 0 or vector_count == 0:
+                logger.warning("Database or FAISS index is empty!")
+                
+        except Exception as e:
+            logger.exception("Error initializing query engine")
+            raise
+
+    async def verify_system_state(self) -> bool:
+        """Verify system state before search"""
+        try:
+            doc_count = self.db.collection.count_documents({})
+            vector_count = self.db.vector_store.index.ntotal
+            
+            if doc_count == 0:
+                logger.error("MongoDB collection is empty")
+                return False
+                
+            if vector_count == 0:
+                logger.error("FAISS index is empty")
+                return False
+                
+            if doc_count != vector_count:
+                logger.warning(f"Document count mismatch: MongoDB={doc_count}, FAISS={vector_count}")
+                
+            return True
+            
+        except Exception as e:
+            logger.exception("Error verifying system state")
+            return False
 
     async def search(self, query: str, top_k: int = Config.TOP_K) -> List[Dict]:
         """Perform vector similarity search"""
         try:
-            # Log the search request
-            logger.info(f"Processing search query: {query}")
+            # Verify system state
+            if not await self.verify_system_state():
+                logger.error("System state verification failed")
+                return []
             
-            # Verify database connection
-            doc_count = self.db.collection.count_documents({})
-            logger.info(f"Total documents in database: {doc_count}")
+            # Log search request
+            logger.info(f"Processing search query: '{query}' (top_k={top_k})")
             
-            # Generate query embedding
-            logger.info("Generating query embedding...")
+            # Generate embedding
             query_embedding = self.vectorization.generate_embeddings([query])[0]
-            logger.info(f"Generated embedding of length: {len(query_embedding)}")
+            logger.info(f"Generated embedding vector (dim={len(query_embedding)})")
             
-            # Get similar documents
-            logger.info(f"Searching for similar documents with top_k={top_k}")
+            # Perform search
             similar_docs = self.db.get_similar_documents(
                 query_embedding=query_embedding,
                 top_k=top_k
             )
             
+            # Log results
             if similar_docs:
-                logger.info(f"Found {len(similar_docs)} similar documents")
+                logger.info(f"Found {len(similar_docs)} similar documents:")
                 for i, doc in enumerate(similar_docs, 1):
-                    logger.info(f"Document {i} - Score: {doc.get('score', 0):.3f}, "
-                              f"Title: {doc.get('title', 'N/A')}")
+                    logger.info(f"- Doc {i}: {doc.get('title', 'N/A')} "
+                              f"(score: {doc.get('score', 0):.3f})")
             else:
                 logger.warning("No similar documents found")
             
@@ -74,7 +129,7 @@ class QueryEngine:
             
         except Exception as e:
             logger.exception(f"Search error: {str(e)}")
-            raise
+            return []
 
     async def generate_response(self, query: str, documents: List[Dict]) -> str:
         """Generate a response based on the query and retrieved documents"""
@@ -104,7 +159,7 @@ class QueryEngine:
             
             logger.info("Generating response...")
             response = self.generator(prompt)[0]['generated_text']
-            logger.info("Response generated successfully")
+            logger.info("Response generation successful")
             
             return response.strip()
             
@@ -120,22 +175,27 @@ class QueryEngine:
         except Exception as e:
             logger.error(f"Error during cleanup: {e}")
 
-# Define lifespan context manager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan manager for the FastAPI application"""
     global query_engine
     
-    # Startup
-    logger.info("Initializing RAG Search API...")
-    query_engine = QueryEngine()
-    
-    yield
-    
-    # Shutdown
-    logger.info("Shutting down RAG Search API...")
-    if query_engine:
-        query_engine.close()
+    try:
+        # Startup
+        logger.info("Initializing RAG Search API...")
+        query_engine = QueryEngine()
+        logger.info("RAG Search API initialization complete")
+        
+        yield
+        
+    except Exception as e:
+        logger.exception("Error during API initialization")
+        raise
+    finally:
+        # Shutdown
+        logger.info("Shutting down RAG Search API...")
+        if query_engine:
+            query_engine.close()
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -148,12 +208,23 @@ app = FastAPI(
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    doc_count = query_engine.db.collection.count_documents({})
-    return {
-        "status": "healthy",
-        "version": "1.0.0",
-        "documents_count": doc_count
-    }
+    try:
+        doc_count = query_engine.db.collection.count_documents({})
+        vector_count = query_engine.db.vector_store.index.ntotal
+        
+        return {
+            "status": "healthy",
+            "version": "1.0.0",
+            "documents_count": doc_count,
+            "vectors_count": vector_count,
+            "vector_dimension": Config.VECTOR_DIMENSION
+        }
+    except Exception as e:
+        logger.exception("Health check error")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Health check failed: {str(e)}"
+        )
 
 @app.post("/search", response_model=SearchResponse)
 async def search(request: SearchRequest):
@@ -170,6 +241,9 @@ async def search(request: SearchRequest):
             query=request.text,
             documents=similar_docs
         )
+        
+        # Log response stats
+        logger.info(f"Returning response with {len(similar_docs)} documents")
         
         return SearchResponse(
             similar_documents=similar_docs,
