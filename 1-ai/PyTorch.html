@@ -1,0 +1,83 @@
+---
+---
+{% include menu.html title="PyTorch Neural Network" %}
+<hr align=left width=1100>
+
+<h1>PyTorch Machine Learning Library</h1>
+
+<p>
+    PyTorch is an open-source machine learning library used for a wide variety of tasks such as deep learning, natural language processing (NLP), and computer vision. It provides a flexible platform to build machine learning models and comes with strong support for GPU acceleration, making it popular among researchers and developers.
+</p>
+
+<p><hr align=left width=1100>
+<h2>Key Features of PyTorch</h2>
+<ul>
+    <li><strong>Tensors</strong>: PyTorch provides multi-dimensional arrays similar to NumPy but with GPU support for faster computation.</li>
+    <li><strong>Autograd</strong>: PyTorch uses automatic differentiation to compute gradients, making it easier to implement and optimize neural networks.</li>
+    <li><strong>Dynamic Computational Graphs</strong>: PyTorch builds computational graphs dynamically, making it easier to debug and modify.</li>
+    <li><strong>Deep Learning Models</strong>: PyTorch includes pre-built models in the <code>torchvision</code> and <code>torchtext</code> libraries for various computer vision and NLP tasks.</li>
+    <li><strong>Extensibility</strong>: You can build custom layers, models, and optimization techniques.</li>
+</ul>
+
+<p><hr align=left width=1100>
+<h2>PyTorch Example</h2>
+<p>
+    How to use PyTorch to create a Neural Network for classifying MNIST digits:
+</p>
+
+<pre><code class="language-python">#!/usr/bin/env python
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torchvision
+import torchvision.transforms as transforms
+
+# Define a simple neural network
+class Net(nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.fc1 = nn.Linear(28*28, 128)  # Fully connected layer 1
+        self.fc2 = nn.Linear(128, 10)     # Fully connected layer 2 (10 classes)
+
+    def forward(self, x):
+        x = x.view(-1, 28*28)            # Flatten the image
+        x = torch.relu(self.fc1(x))      # Apply ReLU to fc1
+        x = self.fc2(x)                  # Final output (logits)
+        return x
+
+# Load dataset and preprocess
+transform   = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
+trainset    = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform)
+trainloader = torch.utils.data.DataLoader(trainset, batch_size=64, shuffle=True)
+
+# Initialize the model, loss function, and optimizer
+net = Net()
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.SGD(net.parameters(), lr=0.01)
+
+# Training loop
+for epoch in range(2):
+    running_loss = 0.0
+    for inputs, labels in trainloader:
+        optimizer.zero_grad()                   # Zero the gradients
+        outputs = net(inputs)                   # Forward pass
+        loss    = criterion(outputs, labels)    # Compute the loss
+        loss.backward()                         # Backward pass
+        optimizer.step()                        # Optimize
+        running_loss += loss.item()
+    print(f'Epoch {epoch+1}, Loss: {running_loss / len(trainloader)}')
+
+print("Finished Training")
+</code>
+</pre>
+
+<p><hr align=left width=1100>
+<h2>Common PyTorch Libraries</h2>
+<ul>
+    <li><code>torchvision</code>: Contains datasets, models, and transforms for computer vision.</li>
+    <li><code>torchtext</code>  : For NLP models and datasets.</li>
+    <li><code>torchaudio</code> : For Audio and Speech Processing.</li>
+</ul>
+
+{% include footer.html %}
+

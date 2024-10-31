@@ -1,0 +1,117 @@
+---
+---
+{% include menu.html title="TF-IDF" %}
+<hr align=left width=1100>
+
+<pre><code class="language-python">#!/usr/bin/env python
+#-------------------------------------------------------------------------------------#
+# TF-IDF (Term Frequency-Inverse Document Frequency)
+#-------------------------------------------------------------------------------------#
+from sklearn.feature_extraction.text import TfidfVectorizer
+from prettytable import PrettyTable
+
+# Example documents
+docs = [  "This is a sample document.",
+          "This document is another sample document.",
+          "Machine Learning Document"
+        ]
+
+# Initialize the vectorizer
+vectorizer = TfidfVectorizer()
+
+# Fit the model and transform the text data into a TF-IDF matrix
+tfidf_matrix = vectorizer.fit_transform(docs)
+
+# Get feature names (terms)
+feature_names = vectorizer.get_feature_names_out()
+
+# Convert to array to see the result
+tfidf_array = tfidf_matrix.toarray()
+
+# Initialize PrettyTable
+table = PrettyTable()
+
+# Add column names (terms)
+table.field_names = ["Document"] + list(feature_names)
+
+# Add rows (documents and their TF-IDF values rounded to 4 decimals)
+for i, doc in enumerate(docs):
+    row = [f"Document {i+1}"] + [round(value, 4) for value in tfidf_array[i]]
+    table.add_row(row)
+
+print(table)
+</code></pre>
+
+<p><hr align=left width=1100>
+<pre><code class="language-markdown">
++-----------+---------+----------+---------+---------+---------+--------+--------+
+| Document  | another | document |   is    | learning| machine | sample |  this  |
++-----------+---------+----------+---------+---------+---------+--------+--------+
+| Document 1|   0.0   |  0.4091  |  0.5268 |   0.0   |   0.0   | 0.5268 | 0.5268 |
+| Document 2|  0.492  |  0.5812  |  0.3742 |   0.0   |   0.0   | 0.3742 | 0.3742 |
+| Document 3|   0.0   |  0.3854  |   0.0   | 0.6525  | 0.6525  |  0.0   |  0.0   |
++-----------+---------+----------+---------+---------+---------+--------+--------+
+</code></pre>
+
+<p><hr align=left width=1100>
+    <h2>TF-IDF Value Breakdown</h2>
+    <p><strong>Higher TF-IDF values:</strong> The higher the TF-IDF score for a term in a document, the more relevant or important that term is to that specific document.</p>
+    <p><strong>Lower TF-IDF values:</strong> Terms with lower TF-IDF scores are either less frequent or appear in many documents, which reduces their importance in distinguishing between documents.</p>
+
+    <h3>Document 1: "This is a sample document."</h3>
+    <pre><code class="language-markdown">
+|  Document  | another | document |  is    | learning | machine | sample |  this  |
+|------------|---------|----------|--------|----------|---------|--------|--------|
+| Document 1 |   0.0   |  0.4091  | 0.5268 |   0.0    |   0.0   | 0.5268 | 0.5268 |    
+    </code></pre>
+
+    <ul>
+        <li><strong>'this', 'is', 'sample':</strong> These terms have a TF-IDF score of 0.5268, which indicates that they are equally important in this document. They appear only once in the document and are relevant for its content.</li>
+        <li><strong>'document':</strong> This word appears in both Document 1 and Document 2, making its score (0.4091) slightly lower because it’s shared across documents, reducing its uniqueness.</li>
+        <li><strong>'another', 'learning', 'machine':</strong> These words are absent in this document, so their TF-IDF score is 0.0.</li>
+    </ul>
+
+    <h3>Document 2: "This document is another sample document."</h3>
+    <pre><code class="language-markdown">
+|  Document  | another | document |  is    | learning | machine |  sample |  this  |
+|------------|---------|----------|--------|----------|---------|---------|--------|
+| Document 2 |  0.492  |  0.5812  | 0.3742 |   0.0    |   0.0   |  0.3742 | 0.3742 |    
+    </code></pre>
+
+    <ul>
+        <li><strong>'another':</strong> This word has a high TF-IDF score of 0.492 because it only appears in Document 2, making it more unique and relevant to this document.</li>
+        <li><strong>'document':</strong> This word has the highest score of 0.5812 because it appears twice in Document 2, making it more important than other terms.</li>
+        <li><strong>'is', 'sample', 'this':</strong> These terms have lower scores (0.3742) because they also appear in Document 1, so their importance in Document 2 is reduced.</li>
+    </ul>
+
+    <h3>Document 3: "Machine Learning Document"</h3>
+    <pre><code class="language-markdown">
+|  Document  | another | document |  is    | learning | machine | sample | this  |
+|------------|---------|----------|--------|----------|---------|--------|-------|
+| Document 3 |   0.0   |  0.3854  |  0.0   |  0.6525  | 0.6525  |  0.0   |  0.0  |    
+    </code></pre>
+    <ul>
+        <li><strong>'learning', 'machine':</strong> These words have high TF-IDF scores (0.6525) because they are unique to Document 3. Since they don’t appear in the other documents, they are very important for distinguishing this document.</li>
+        <li><strong>'document':</strong> This word has a lower TF-IDF score of 0.3854 because it also appears in Documents 1 and 2. Even though it appears in all documents, it’s still somewhat important in Document 3.</li>
+    </ul>
+
+    <h3>TF-IDF Ranking Summary</h3>
+    <ul>
+        <li><strong>Terms with high TF-IDF scores:</strong> are unique or more frequent in a particular document, making them key terms for that document. <br>
+        <em>Example:</em> 'document' in Document 2, 'machine' and 'learning' in Document 3.</li>
+        <li><strong>Terms with low TF-IDF scores:</strong> are either shared across multiple documents or appear less frequently in the specific document, making them less important. <br>
+        <em>Example:</em> 'this', 'is', 'sample' in Document 2 and Document 1.</li>
+    </ul>
+
+    <h2>Range of TF-IDF</h2>
+    <p>The TF-IDF score typically ranges between <strong>0.0</strong> and <strong>1.0</strong>, though in theory, the upper limit can go beyond 1 depending on the data. In practice, however, the values are normalized to stay in this range:</p>
+    <ul>
+        <li><strong>0.0:</strong> Indicates that the term is either not present in the document or is too common across the entire corpus to be meaningful.</li>
+        <li><strong>1.0:</strong> Indicates that the term is highly relevant to the specific document and does not appear frequently in other documents in the corpus.</li>
+    </ul>
+</body>
+</html>
+
+
+{% include footer.html %}
+

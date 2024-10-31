@@ -1,0 +1,123 @@
+---
+---
+{% include menu.html title="FAISS Retrieval QA with OpenAI GPT-4" %}
+<hr align=left width=1100>
+
+<h1>RetrievalQA?</h1>
+
+<p><strong>RetrievalQA</strong> is a specialized question-answering framework that leverages <strong>retrievers</strong> (like FAISS or vector databases) to find relevant documents or text snippets based on a query and then uses <strong>language models (LLMs)</strong> to generate answers based on the retrieved content. This architecture improves the LLM's ability to answer questions accurately by limiting the scope to relevant data instead of relying on the model's general knowledge.</p>
+
+<h2>In this framework:</h2>
+<ul>
+    <li><strong>Retriever:</strong> Quickly fetches relevant documents or information from a knowledge base (e.g., a FAISS index).</li>
+    <li><strong>Language Model (LLM):</strong> Uses retrieved content as context to generate precise answers to user questions.</li>
+</ul>
+
+<p><hr align=left width=1100>
+<h1>FAISS Retrieval QA with OpenAI GPT-4</h1>
+
+<h2>Description</h2>
+<p>This Python script builds a conversational QA system by integrating <strong>FAISS vector stores</strong> with <strong>OpenAI GPT-4</strong>. It retrieves relevant documents from the FAISS index to answer user questions interactively. Below is a step-by-step breakdown of the script’s functionality:</p>
+
+<h3>Script Breakdown</h3>
+<ul>
+    <li><strong>API Key Setup:</strong> The OpenAI API key is retrieved from an environment variable <code>OPENAI_API_KEY</code>. If the key is not set, the script raises an error.</li>
+    <li><strong>Loading FAISS Index:</strong> The FAISS vector index is loaded from disk, allowing similarity search across indexed content. If the index is missing, the script raises a <code>FileNotFoundError</code>.</li>
+    <li><strong>Initializing GPT-4:</strong> Uses the <code>ChatOpenAI</code> model to provide answers based on the retrieved documents.</li>
+    <li><strong>Building the QA Chain:</strong> A <code>RetrievalQA</code> chain is constructed to connect the FAISS retriever and the GPT-4 model for end-to-end question answering.</li>
+    <li><strong>Query Loop:</strong> The user can interact with the system in a loop, asking questions. If relevant documents are found, the answer is displayed. If no documents match, the user is notified.</li>
+</ul>
+
+<p><hr align=left width=1100>
+<h2>Python Code</h2>
+<pre><code class="language-python">
+#!/usr/bin/env python
+
+import os
+import openai  # Ensure openai is imported
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI  # Updated imports
+from langchain_community.vectorstores import FAISS
+from langchain.chains import RetrievalQA
+
+# Step 1: Set up API Key
+openai.api_key = os.getenv("OPENAI_API_KEY")
+if not openai.api_key:
+    raise ValueError("OpenAI API key not found. Set OPENAI_API_KEY as an environment variable.")
+
+# Step 2: Load the FAISS Index from Disk
+faiss_index_path = "faiss_index"
+embeddings = OpenAIEmbeddings()
+
+if os.path.exists(faiss_index_path):
+    print(f"Loading FAISS index from '{faiss_index_path}'...")
+    vector_store = FAISS.load_local(
+        faiss_index_path,
+        embeddings,
+        allow_dangerous_deserialization=True  # Enable safe deserialization
+    )
+else:
+    raise FileNotFoundError(f"No FAISS index found at '{faiss_index_path}'. Please generate the index first.")
+
+# Step 3: Initialize ChatOpenAI Model
+llm = ChatOpenAI(model="gpt-4")
+
+# Step 4: Build the RetrievalQA Chain without Unsupported Parameters
+retriever = vector_store.as_retriever(search_kwargs={"k": 3})
+
+qa_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    retriever=retriever,
+)
+
+# Step 5: Query Loop with Manual Handling for Empty Results
+print("Ask me anything about the indexed content. Type 'exit' to quit.")
+while True:
+    question = input("\nYour Question: ")
+    if question.lower() == 'exit':
+        print("Goodbye!")
+        break
+
+    try:
+        # Retrieve relevant documents manually
+        docs = retriever.get_relevant_documents(question)
+        if not docs:
+            print("No relevant information found in the index.")
+            continue
+
+        # If documents are found, run the QA chain
+        result = qa_chain.run(question)
+        print(f"Answer: {result}")
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+</code></pre>
+
+<h2>Explanation of the Code</h2>
+<ul>
+    <li><strong>Setting Up the API Key:</strong> The script retrieves the OpenAI API key from the environment. If not set, it raises a <code>ValueError</code>.</li>
+    <li><strong>Loading FAISS Index:</strong> The FAISS index is essential for retrieving relevant content. If the index is missing, the script throws a <code>FileNotFoundError</code>.</li>
+    <li><strong>GPT-4 Model:</strong> The script uses GPT-4 to answer questions based on the content retrieved from the FAISS index.</li>
+    <li><strong>QA Chain Construction:</strong> The <code>RetrievalQA</code> chain links the retriever and the LLM (GPT-4) to answer questions efficiently.</li>
+    <li><strong>User Interaction:</strong> In a loop, users can ask questions or type 'exit' to quit. If no relevant documents are found, the user is informed. If errors occur, they are displayed to the user.</li>
+</ul>
+
+<p><hr align=left width=1100>
+<h2>Output</h2>
+<p>When the script runs, the following output is shown for various scenarios:</p>
+<pre><code class="language-markdown">
+Loading FAISS index from 'faiss_index'...
+Ask me anything about the indexed content. Type 'exit' to quit.
+
+Your Question: What is the purpose of this document?
+Answer: [Answer provided by GPT-4 based on indexed content]
+
+Your Question: exit
+Goodbye!
+</code></pre>
+
+<h2>Conclusion</h2>
+<p>This script creates a simple yet powerful conversational system by combining <strong>FAISS</strong> with <strong>OpenAI GPT-4</strong>. It enables fast and relevant document retrieval followed by natural language responses, making it suitable for chatbots, knowledge systems, and question-answering applications.</p>
+
+
+{% include footer.html %}
+

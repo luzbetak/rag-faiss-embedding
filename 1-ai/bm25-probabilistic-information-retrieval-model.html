@@ -1,0 +1,80 @@
+---
+---
+{% include menu.html title="bm25 probabilistic information retrieval model" %}
+<hr align=left width=1100>
+
+<p><strong>BM25</strong> (Best Matching 25) is a ranking function used by search engines to rank documents based on their relevance to a given query. It is one of the most well-known algorithms within the family of probabilistic information retrieval models. BM25 builds upon the earlier TF-IDF (Term Frequency-Inverse Document Frequency) approach and is considered a highly effective ranking model for information retrieval tasks.</p>
+
+<h3>Key Components of BM25:</h3>
+
+<ul>
+    <li><strong>Term Frequency (TF):</strong>
+        <ul>
+            <li>Measures how often a term (keyword) appears in a document.</li>
+            <li>BM25 uses a variant called saturated term frequency, meaning that the importance of term frequency grows less rapidly as it increases. This prevents overemphasis on documents with high repetition of a term.</li>
+        </ul>
+    </li>
+    <li><strong>Inverse Document Frequency (IDF):</strong>
+        <ul>
+            <li>Measures how unique or rare a term is across the entire document collection (corpus).</li>
+            <li>Terms that appear in many documents are given less weight, while terms that appear in fewer documents are considered more important.</li>
+        </ul>
+    </li>
+    <li><strong>Document Length Normalization:</strong>
+        <ul>
+            <li>BM25 takes into account the length of a document to avoid favoring longer documents that may mention terms more frequently simply because they contain more content.</li>
+            <li>The algorithm normalizes the term frequency based on document length, adjusting the importance of terms in shorter or longer documents.</li>
+        </ul>
+    </li>
+</ul>
+
+<h3>BM25 Formula:</h3>
+<p>The BM25 relevance score for a document <em>D</em> and a query <em>Q</em> is calculated as:</p>
+
+<pre>
+BM25(D,Q) = ∑<sub>t ∈ Q</sub> IDF(t) ⋅ [f(t,D) ⋅ (k1 + 1)] / [f(t,D) + k1 ⋅ (1 - b + b ⋅ |D| / avgdl)]
+</pre>
+
+<p>Where:</p>
+<ul>
+    <li><em>f(t,D)</em>: Term frequency of term <em>t</em> in document <em>D</em>.</li>
+    <li><em>|D|</em>: The length of the document (number of terms).</li>
+    <li><em>avgdl</em>: The average document length in the corpus.</li>
+    <li><em>k1</em>: A tuning parameter controlling term frequency saturation (commonly set between 1.2 and 2.0).</li>
+    <li><em>b</em>: A tuning parameter controlling document length normalization (commonly set to 0.75).</li>
+    <li><em>IDF(t)</em>: Inverse document frequency of term <em>t</em>, typically calculated as:</li>
+    <pre>
+    IDF(t) = log((N - nt + 0.5) / (nt + 0.5) + 1)
+    </pre>
+    <li><em>N</em>: Total number of documents in the corpus.</li>
+    <li><em>nt</em>: Number of documents containing the term <em>t</em>.</li>
+</ul>
+
+<h3>Parameters in BM25:</h3>
+<ul>
+    <li><em>k1</em> controls the impact of term frequency. A higher value makes the algorithm more sensitive to term frequency.</li>
+    <li><em>b</em> controls the influence of document length normalization. A value of 1 fully normalizes by document length, while a value of 0 ignores length differences.</li>
+</ul>
+
+<h3>Why BM25 is Effective:</h3>
+<ul>
+    <li><strong>Dynamic Term Frequency Handling:</strong> Unlike traditional TF-IDF, BM25 applies a saturation function to term frequency, which prevents terms that occur frequently in a document from being overvalued.</li>
+    <li><strong>Document Length Normalization:</strong> BM25 handles long documents more gracefully than TF-IDF by applying length normalization.</li>
+    <li><strong>Customization:</strong> The <em>k1</em> and <em>b</em> parameters allow for fine-tuning the ranking function based on the specific needs of the application.</li>
+</ul>
+
+<h3>Use Cases of BM25:</h3>
+<ul>
+    <li>BM25 is widely used in modern search engines, databases, and information retrieval systems such as:</li>
+    <ul>
+        <li><font color=red>Xapian (C++ based search library)</font></li>
+        <li><font color=red>Whoosh (Python-based search engine)</font></li>
+    </ul>
+</ul>
+
+<h3>Conclusion:</h3>
+<p>BM25 is considered a standard and powerful ranking algorithm for text retrieval, as it balances the frequency of terms with the size of documents and the rarity of the search terms across the document corpus. It performs well in real-world search systems and is often used as the default ranking algorithm in search engines.</p>
+
+
+{% include footer.html %}
+

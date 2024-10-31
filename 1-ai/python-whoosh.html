@@ -1,0 +1,97 @@
+---
+---
+{% include menu.html title="python whoosh" %}
+<hr align=left width=1100>
+
+<h2>Create Python BM25 Index</h2>
+<pre><code class="language-python">#!/usr/bin/env python
+from whoosh.index import create_in
+from whoosh.fields import Schema, TEXT, ID
+from whoosh import qparser
+from whoosh.qparser import QueryParser
+from whoosh.analysis import StemmingAnalyzer
+import os
+
+# Define schema for indexing
+schema = Schema(
+    title=TEXT(stored=True),
+    content=TEXT(stored=True, analyzer=StemmingAnalyzer()),  # Stemming for better search results
+    path=ID(stored=True, unique=True)
+)
+
+# Create index directory if it doesn't exist
+if not os.path.exists("indexdir"):
+    os.mkdir("indexdir")
+
+# Create the index
+index = create_in("indexdir", schema)
+
+# Add documents to the index
+writer = index.writer()
+
+# Example documents to index
+documents = [
+    {"title": "Document 1", "content": "The quick brown fox jumps over the lazy dog.", "path": "/a"},
+    {"title": "Document 2", "content": "Whoosh is a fast search library implemented in pure Python.", "path": "/b"},
+    {"title": "Document 3", "content": "The fox is quick and jumps high.", "path": "/c"}
+]
+
+# Add each document to the index
+for doc in documents:
+    writer.add_document(title=doc["title"], content=doc["content"], path=doc["path"])
+
+writer.commit()  # Save changes to the index
+
+print("Indexing completed.")
+</code></pre>
+
+<p><hr align=left width=1100>
+<h2>Search Index BM25</h2>
+<pre><code class="language-python">#!/usr/bin/env python
+
+from whoosh.index import open_dir
+from whoosh.qparser import QueryParser
+
+def search(query_str):
+    # Open the index
+    ix = open_dir("indexdir")
+
+    # Parse the query
+    with ix.searcher() as searcher:
+        query_parser = QueryParser("content", ix.schema)
+        query = query_parser.parse(query_str)
+
+        # Perform the search
+        results = searcher.search(query, limit=10)
+
+        # Print the results
+        print(f"Search results for '{query_str}':")
+        for result in results:
+            print(f"Title: {result['title']}, Path: {result['path']}")
+            print(f"Content: {result['content']}")
+            print("-" * 40)
+
+# Example search queries
+search("quick fox")
+search("search library")
+</code></pre>
+
+<p><hr align=left width=1100>
+<h2>Output</h2>
+<pre><code class="language-markdown">#!/usr/bin/env python
+Search results for 'quick fox':
+Title: Document 3, Path: /c
+Content: The fox is quick and jumps high.
+----------------------------------------
+Title: Document 1, Path: /a
+Content: The quick brown fox jumps over the lazy dog.
+----------------------------------------
+Search results for 'search library':
+Title: Document 2, Path: /b
+Content: Whoosh is a fast search library implemented in pure Python.
+----------------------------------------
+
+</code></pre>
+
+{% include footer.html %}
+

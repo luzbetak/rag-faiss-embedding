@@ -1,0 +1,273 @@
+---
+---
+{% include menu.html title="sentiment analysis model" %}
+<hr align=left width=1100>
+
+
+<h2>Build and Save Sentiment Model</h2>
+<pre><code class="language-python">#!/usr/bin/env python
+import torch
+from torch.utils.data import Dataset, DataLoader
+from torch import nn
+from transformers import BertTokenizer, BertModel
+from sklearn.metrics import accuracy_score, classification_report
+
+# Define the TextDataset class
+class TextDataset(Dataset):
+    def __init__(self, texts, labels):
+        self.texts     = texts
+        self.labels    = labels
+        self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+    
+    def __len__(self):
+        return len(self.texts)
+    
+    def __getitem__(self, idx):
+        text   = self.texts[idx]
+        label  = self.labels[idx]
+        tokens = self.tokenizer(
+            text, 
+            padding='max_length', 
+            max_length=128, 
+            truncation=True, 
+            return_tensors='pt'
+        )
+        input_ids = tokens['input_ids'].squeeze(0)
+        attention_mask = tokens['attention_mask'].squeeze(0)
+        return {
+            'input_ids': input_ids,
+            'attention_mask': attention_mask,
+            'labels': torch.tensor(label, dtype=torch.float)
+        }
+
+# Expanded dataset with both positive and negative examples
+text_data = [
+    "This movie is amazing!",               # positive
+    "I really disliked the plot.",          # negative
+    "The acting was superb.",               # positive
+    "This book is a masterpiece.",          # positive
+    "What a terrible waste of time.",       # negative
+    "I love this!",                         # positive
+    "This was the worst movie ever.",       # negative
+    "Fantastic experience, loved it.",      # positive
+    "Not good at all.",                     # negative
+    "Absolutely fantastic.",                # positive
+    "I hated every minute of it.",          # negative
+    "It was a decent watch.",               # neutral/positive
+    "Great movie!",                         # positive
+    "I will never watch this again.",       # negative
+    "Loved every second of it.",            # positive
+    "Awful plot, horrible acting.",         # negative
+    "Brilliant direction and storytelling.",# positive
+    "Worst experience I've had.",           # negative
+    "The movie was quite boring.",          # negative
+    "Best performance of the year."         # positive
+]
+labels = [1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1]
+
+# Split into train and test sets (80% training, 20% testing)
+train_size    = int(0.8 * len(text_data))
+train_dataset = TextDataset(text_data[:train_size], labels[:train_size])
+test_dataset  = TextDataset(text_data[train_size:], labels[train_size:])
+
+train_dataloader = DataLoader(train_dataset, batch_size=4)
+test_dataloader = DataLoader(test_dataset, batch_size=4)
+
+# Define the Model with two fully connected layers
+class SentimentClassifier(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.bert = BertModel.from_pretrained('bert-base-uncased')
+        self.fc1  = nn.Linear(self.bert.config.hidden_size, 128)
+        self.fc2  = nn.Linear(128, 1)
+
+    def forward(self, input_ids, attention_mask):
+        outputs       = self.bert(input_ids, attention_mask)
+        pooled_output = outputs.pooler_output
+        x             = torch.relu(self.fc1(pooled_output))  # Add non-linearity
+        output        = self.fc2(x)
+        return output  # Return raw logits, no sigmoid here
+
+# Initialize the Model
+model = SentimentClassifier()
+
+# Loss Function and Optimizer
+criterion = nn.BCEWithLogitsLoss()  # Use BCEWithLogitsLoss
+optimizer = torch.optim.Adam(model.parameters(), lr=3e-5)
+
+# Train the model or load the existing model
+train_model = True  # Set to False if you want to skip training and load the model
+
+if train_model:
+    # Training Loop
+    num_epochs = 3
+    for epoch in range(num_epochs):
+        model.train()  # Ensure the model is in training mode
+        for batch in train_dataloader:
+            input_ids = batch['input_ids']
+            attention_mask = batch['attention_mask']
+            labels = batch['labels'].float()
+            
+            optimizer.zero_grad()
+            
+            # Get model outputs
+            outputs = model(input_ids, attention_mask)
+            
+            # Squeeze the outputs to remove the extra dimension
+            outputs = outputs.squeeze(1)
+            
+            # Compute the loss
+            loss = criterion(outputs, labels)
+            
+            # Backpropagation
+            loss.backward()
+            optimizer.step()
+        
+        print(f'Epoch [{epoch+1}/{num_epochs}]')
+        print(f'Loss: {loss.item()}')
+
+    # Save the trained model
+    torch.save(model.state_dict(), 'sentiment_model.pth')
+    print("Model saved as 'sentiment_model.pth'")
+else:
+    # Load the saved model
+    model.load_state_dict(torch.load('sentiment_model.pth'))
+    model.eval()  # Set to evaluation mode
+    print("Model loaded from 'sentiment_model.pth'")
+
+# Evaluation
+model.eval()  # Set the model to evaluation mode
+all_preds  = []
+all_labels = []
+
+threshold = 0.5  # Set a threshold for classification
+
+with torch.no_grad():
+    for batch in test_dataloader:
+        input_ids      = batch['input_ids']
+        attention_mask = batch['attention_mask']
+        outputs        = model(input_ids, attention_mask)
+        
+        # Squeeze the outputs and apply sigmoid + threshold to get predictions
+        outputs = torch.sigmoid(outputs.squeeze(1))
+        preds   = (outputs > threshold).float()
+        
+        all_preds.extend(preds.cpu().numpy())
+        all_labels.extend(batch['labels'].cpu().numpy())
+
+# Print accuracy and classification report
+print(f'Accuracy: {accuracy_score(all_labels, all_preds)}')
+print(classification_report(all_labels, all_preds))
+
+# Optional: Print raw outputs for debugging
+with torch.no_grad():
+    for batch in test_dataloader:
+        input_ids = batch['input_ids']
+        attention_mask = batch['attention_mask']
+        outputs = model(input_ids, attention_mask)
+        
+        # Print raw outputs to inspect the values
+        print("Model outputs:", outputs)
+        
+        preds = (torch.sigmoid(outputs.squeeze(1)) > threshold).float()
+        print("Predictions:", preds)
+
+</pre></code>
+
+
+<p><hr align=left width=1100>
+
+<h2>Use Sentiment Model</h2>
+<pre><code class="language-python">
+
+#!/usr/bin/env python
+import torch
+from torch import nn
+from transformers import BertTokenizer, BertModel
+from prettytable import PrettyTable
+
+# Define the Model with two fully connected layers
+class SentimentClassifier(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.bert = BertModel.from_pretrained('bert-base-uncased')
+        self.fc1  = nn.Linear(self.bert.config.hidden_size, 128)
+        self.fc2  = nn.Linear(128, 1)
+
+    def forward(self, input_ids, attention_mask):
+        outputs       = self.bert(input_ids, attention_mask)
+        pooled_output = outputs.pooler_output
+        x             = torch.relu(self.fc1(pooled_output))  # Add non-linearity
+        output        = self.fc2(x)
+        return output  # Return raw logits
+
+# Load the trained model
+model = SentimentClassifier()
+model.load_state_dict(torch.load('sentiment_model.pth'))
+model.eval()  # Set the model to evaluation mode
+
+# Load the tokenizer
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+
+# Example positive and negative statements
+statements = [
+    "I absolutely love this movie!",             # Positive
+    "This is the worst film I have ever seen.",  # Negative
+    "The book was fantastic!",                   # Positive
+    "I really hated the acting.",                # Negative
+    "Amazing story and great performances.",     # Positive
+    "It was a complete waste of time.",          # Negative
+]
+
+# Prepare a table using PrettyTable
+table = PrettyTable()
+table.field_names = ["Statement", "Prediction"]
+
+# Run inference on each statement
+threshold = 0.5  # Classification threshold
+for statement in statements:
+    # Tokenize and preprocess the input statement
+    tokens = tokenizer(
+        statement, 
+        padding        = 'max_length',
+        max_length     = 128,
+        truncation     = True,
+        return_tensors = 'pt'
+    )
+    input_ids = tokens['input_ids']
+    attention_mask = tokens['attention_mask']
+    
+    # Run the model and get predictions
+    with torch.no_grad():
+        outputs    = model(input_ids, attention_mask)
+        outputs    = torch.sigmoid(outputs).squeeze(1)  # Apply sigmoid to logits
+        prediction = (outputs > threshold).float().item()  # Apply threshold
+    
+    # Convert the prediction to "Positive" or "Negative"
+    sentiment = "Positive" if prediction == 1.0 else "Negative"
+    
+    # Add the statement and its prediction to the table
+    table.add_row([statement, sentiment])
+
+# Print the table
+print(table)
+
+</code></pre>
+ 
+<h2>Output</h2>
+<pre><code class="language-markdown">
++-----------------------------------------------+------------+
+|                   Statement                   | Prediction |
++-----------------------------------------------+------------+
+| I absolutely love this movie!                 | Positive   |
+| This is the worst film I have ever seen.      | Negative   |
+| The book was fantastic!                       | Positive   |
+| I really hated the acting.                    | Negative   |
+| Amazing story and great performances.         | Positive   |
+| It was a complete waste of time.              | Negative   |
++-----------------------------------------------+------------+
+
+</code></pre>
+
+{% include footer.html %}
+

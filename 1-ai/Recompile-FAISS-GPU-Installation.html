@@ -1,0 +1,99 @@
+---
+---
+{% include menu.html title="Rebuild CUDA GPU" %}
+<hr>
+
+ <h1>FAISS GPU Installation</h1>
+
+    <h2>Step 1: Install Dependencies</h2>
+    <p>Run the following commands to install the necessary dependencies:</p>
+    <pre><code class="language-bash">
+sudo apt-get update
+sudo apt-get install -y cmake libopenblas-dev libomp-dev libgtest-dev gcc-10 g++-10
+    </code></pre>
+
+    <h2>Step 2: Install CUDA</h2>
+    <p>If CUDA is not installed, follow these steps to install it:</p>
+    <pre><code class="language-bash">
+sudo apt-get install cuda-12-2
+    </code></pre>
+
+    <p>Set up environment variables for CUDA:</p>
+    <pre><code class="language-bash">
+export CUDA_HOME=/usr/local/cuda-12.2
+export PATH=$CUDA_HOME/bin:$PATH
+export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
+    </code></pre>
+
+    <h2>Step 3: Clone FAISS Repository</h2>
+    <pre><code class="language-bash">
+git clone https://github.com/facebookresearch/faiss.git
+cd faiss
+    </code></pre>
+
+    <h2>Step 4: File Editing - Modify CMakeLists.txt</h2>
+    <p>Edit the CMakeLists.txt file to ensure proper configuration:</p>
+    <pre><code class="language-bash">
+vi faiss/CMakeLists.txt
+    </code></pre>
+
+    <p>Add the following lines at the top:</p>
+    <pre><code class="language-cmake">
+cmake_minimum_required(VERSION 3.27)
+project(Faiss VERSION 1.7.0 LANGUAGES C CXX)
+    </code></pre>
+
+    <p>Fix the path for `faiss-config.cmake.in` by editing the line around line 410 in `CMakeLists.txt`:</p>
+    <pre><code class="language-cmake">
+configure_file(${CMAKE_SOURCE_DIR}/cmake/faiss-config.cmake.in
+               ${CMAKE_BINARY_DIR}/faiss-config.cmake @ONLY)
+    </code></pre>
+
+    <h2>Step 5: Build FAISS with GPU Support</h2>
+    <pre><code class="language-bash">
+cmake -B build -DFAISS_ENABLE_GPU=ON -DCMAKE_CUDA_COMPILER=/usr/local/cuda-12.2/bin/nvcc -DCMAKE_CUDA_ARCHITECTURES=86 -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)
+    </code></pre>
+
+    <h2>Step 6: Install FAISS (Optional)</h2>
+    <pre><code class="language-bash">
+sudo make install
+    </code></pre>
+
+    <h2>Step 7: Verify FAISS Installation</h2>
+    <p>Run the following test script to verify FAISS installation:</p>
+    <pre><code class="language-python">
+import faiss
+import numpy as np
+
+# Create random vectors
+d = 128  # dimension
+nb = 1000  # number of vectors
+xb = np.random.random((nb, d)).astype('float32')
+
+# Create an index for L2 distance
+index = faiss.IndexFlatL2(d)
+
+# Add vectors
+index.add(xb)
+
+# Search for nearest neighbors
+D, I = index.search(xb[:1], 5)
+print(f"Distances: {D}")
+print(f"Indices: {I}")
+    </code></pre>
+
+    <h2>Step 8: Install SWIG (if not installed)</h2>
+    <p>If you encounter issues with Python bindings, install SWIG:</p>
+    <pre><code class="language-bash">
+sudo apt-get install swig
+    </code></pre>
+
+    <h2>Step 9: Set PYTHONPATH (Optional)</h2>
+    <p>If FAISS Python bindings aren't being picked up, set the PYTHONPATH:</p>
+    <pre><code class="language-bash">
+export PYTHONPATH=/home/open-webui/faiss/build/faiss/python:$PYTHONPATH
+    </code></pre>
+
+{% include footer.html %}
+

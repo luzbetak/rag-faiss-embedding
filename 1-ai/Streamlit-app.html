@@ -1,0 +1,71 @@
+---
+---
+{% include menu.html title="Streamlit app" %}
+<hr align=left width=1100>
+
+    <h1>Streamlit App</h1>
+
+    <div class="input-container">
+        <label for="name">Enter your name:</label>
+        <input type="text" id="name" value="Kevin">
+    </div>
+
+    <div class="slider-container">
+        <label for="age">Select your age: 25</label>
+        <input type="range" id="age" min="1" max="100" value="25">
+    </div>
+
+    <div class="output">
+        <p>Hello, Kevin! You are 25 years old.</p>
+    </div>
+
+    <h2>Line Chart</h2>
+    <table border=1>
+        <thead>
+            <tr>
+                <th>A</th>
+                <th>B</th>
+                <th>C</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>0.17</td><td>-0.57</td><td>1.22</td></tr>
+            <tr><td>-0.47</td><td>1.11</td><td>-0.34</td></tr>
+            <tr><td>0.33</td><td>-0.88</td><td>0.45</td></tr>
+            <tr><td>-1.12</td><td>1.34</td><td>-0.76</td></tr>
+            <tr><td>1.02</td><td>0.66</td><td>0.99</td></tr>
+        </tbody>
+    </table>
+
+<p><hr align=left width=1100>
+<pre><code class="language-python">
+#!/usr/bin/env python
+
+import streamlit as st
+import pandas as pd
+import numpy as np
+
+# Title of the app
+st.title("Streamlit App")
+
+# Text input box
+user_name = st.text_input("Enter your name", "Kevin")
+
+# Slider input
+age = st.slider("Select your age", 1, 100, 25)
+
+# Display user input
+st.write(f"Hello, {user_name}! You are {age} years old.")
+
+# Generate sample data
+chart_data = pd.DataFrame(
+    np.random.randn(20, 3),
+    columns=["A", "B", "C"]
+)
+
+# Display a line chart
+st.line_chart(chart_data)
+</code></pre>
+
+{% include footer.html %}
+

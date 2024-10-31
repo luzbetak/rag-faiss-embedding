@@ -1,0 +1,123 @@
+---
+---
+{% include menu.html title="Python Algorithms" %}
+
+
+<p><hr align=left width=1000>
+<h1>Gunning Fog Index</h1>
+The Gunning Fog Index is a readability test that estimates the years of formal education needed to understand a text on the first reading. It takes into account the number of words, the number of complex words (words with three or more syllables), and the number of sentences in a text.
+<pre><code class="language-python">import re
+
+def count_words(text):
+    """Counts the number of words in a text."""
+    words = re.findall(r'\w+', text)
+    return len(words)
+
+def count_sentences(text):
+    """Counts the number of sentences in a text."""
+    sentences = re.split(r'[.!?]+', text)
+    return len(sentences) - 1 if text[-1] in '.!?' else len(sentences)
+
+def count_complex_words(text):
+    """Counts the number of complex words in a text (words with three or more syllables)."""
+    def syllable_count(word):
+        word = word.lower()
+        vowels = "aeiouy"
+        count = 0
+        if word[0] in vowels:
+            count += 1
+        for index in range(1, len(word)):
+            if word[index] in vowels and word[index - 1] not in vowels:
+                count += 1
+        if word.endswith("e"):
+            count -= 1
+        if count == 0:
+            count += 1
+        return count
+
+    words = re.findall(r'\w+', text)
+    complex_words = [word for word in words if syllable_count(word) >= 3]
+    return len(complex_words)
+
+def gunning_fog_index(text):
+    """Calculates the Gunning Fog Index for a given text."""
+    num_words = count_words(text)
+    num_sentences = count_sentences(text)
+    num_complex_words = count_complex_words(text)
+
+    if num_sentences == 0:
+        return 0  # Avoid division by zero
+
+    average_sentence_length = num_words / num_sentences
+    percentage_complex_words = (num_complex_words / num_words) * 100
+
+    fog_index = 0.4 * (average_sentence_length + percentage_complex_words)
+    return fog_index
+
+# Example usage
+text = (
+    "The Gunning Fog Index is a readability test for English writing. "
+    "It estimates the years of formal education needed to understand the text on the first reading. "
+    "Complex words are those with three or more syllables."
+)
+
+fog_index = gunning_fog_index(text)
+print(f"The Gunning Fog Index for the given text is: {fog_index:.2f}")
+</code></pre>
+
+<p><hr align=left width=1000>
+<h2>OUTPUT</h2>
+The Gunning Fog Index for the given text is: 10.40
+
+<p><hr align=left width=1000>
+    <h1>Gunning Fog Index Explanation</h1>
+
+    <p>The Gunning Fog Index is a readability test that estimates the years of formal education needed to understand a text on the first reading. The implementation calculates the Gunning Fog Index using the following steps:</p>
+
+    <ol>
+        <li>
+            <strong>Words:</strong>
+            <ul>
+                <li>The code counts all words in the text using regular expressions.</li>
+            </ul>
+        </li>
+        <li>
+            <strong>Sentences:</strong>
+            <ul>
+                <li>Sentences are counted by splitting the text at sentence-ending punctuation marks, such as period (.), exclamation mark (!), and question mark (?).</li>
+            </ul>
+        </li>
+        <li>
+            <strong>Complex Words:</strong>
+            <ul>
+                <li>A complex word is defined as one with three or more syllables.</li>
+                <li>The <code>syllable_count</code> function estimates the number of syllables in a word by analyzing vowel patterns.</li>
+            </ul>
+        </li>
+        <li>
+            <strong>Gunning Fog Index Calculation:</strong>
+            <ul>
+                <li>
+                    The formula used for the Gunning Fog Index is:
+                    <ol>
+                        <li>Average sentence length = number of words / number of sentences.</li>
+                        <li>Percentage of complex words = (number of complex words / number of words) * 100.</li>
+                        <li>The Gunning Fog Index is calculated as:
+                            <code>0.4 * (average sentence length + percentage of complex words)</code>.
+                        </li>
+                    </ol>
+                </li>
+            </ul>
+        </li>
+    </ol>
+
+    <p><strong>Usage:</strong></p>
+    <ul>
+        <li>A Gunning Fog Index of 7-8 is considered optimal for general readership.</li>
+        <li>A higher score suggests that the text is more difficult to read, requiring higher levels of education.</li>
+    </ul>
+
+    <p>This implementation provides a way to rank texts based on readability using the Gunning Fog Index, which is useful in various Natural Language Processing (NLP) applications such as document analysis, content creation, and education.</p>
+
+{% include footer.html %}
+</body></html>

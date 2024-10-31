@@ -1,0 +1,56 @@
+---
+---
+{% include menu.html title="GeForce RTX 3060 Installation" %}
+<hr>
+
+    <h1>Install NVIDIA GeForce RTX 3060 for Machine Learning</h1>
+    <h2>Step 1: Prepare Your System</h2>
+    <p>Before installing the NVIDIA drivers, update your system and install the necessary packages.</p>
+    <pre><code class="language-bash">sudo apt update
+sudo apt upgrade</code></pre>
+    <p>Install required build tools and headers:</p>
+    <pre><code class="language-bash">sudo apt install build-essential linux-headers-$(uname -r)</code></pre>
+
+    <h2>Step 2: Install NVIDIA Drivers</h2>
+    <ol>
+        <li>
+            <strong>Add the NVIDIA PPA:</strong>
+            <p>Add the official NVIDIA PPA to get the latest drivers:</p>
+            <pre><code class="language-bash">sudo add-apt-repository ppa:graphics-drivers/ppa
+sudo apt update</code></pre>
+        </li>
+        <li>
+            <strong>Identify the Recommended Driver:</strong>
+            <p>Find the recommended driver for your GPU using the following command:</p>
+            <pre><code class="language-bash">ubuntu-drivers devices</code></pre>
+            <p>The output will suggest the best driver for your system. For example, it may recommend <code>nvidia-driver-560</code>.</p>
+        </li>
+        <li>
+            <strong>Install the Recommended Driver:</strong>
+            <p>Replace <code>nvidia-driver-xxx</code> with the recommended driver, such as <code>nvidia-driver-560</code>:</p>
+            <pre><code class="language-bash">sudo apt install nvidia-driver-560</code></pre>
+        </li>
+        <li>
+            <strong>Reboot Your System:</strong>
+            <p>Reboot your machine to apply the changes:</p>
+            <pre><code class="language-bash">sudo reboot</code></pre>
+        </li>
+    </ol>
+
+    <h2>Step 3: Install CUDA (Optional)</h2>
+    <p>If you plan to use CUDA for GPU computing, you can install it using the following command:</p>
+    <pre><code class="language-bash">sudo apt install nvidia-cuda-toolkit</code></pre>
+
+    <h2>Step 4: Verify Installation</h2>
+    <p>After rebooting, you can check if the driver is installed and working properly by running:</p>
+    <pre><code class="language-bash">alias nv1='nvtop'
+alias nv2='nvidia-smi'
+    </code></pre>
+    <p>This will display details about your installed GPU and the driver version.</p>
+
+    <h2>Step 5: Enable Microphone on Chrome</h2>
+    <p>Insecure origins treated as secure: http://192.168.1.190:8080/</p>
+    <pre><code class="language-bash">chrome://flags/ </code></pre>
+
+{% include footer.html %}
+

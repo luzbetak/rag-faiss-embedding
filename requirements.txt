@@ -1,0 +1,13 @@
+tandas==2.1.0
+sqlalchemy==2.0.20
+sentence-transformers==2.2.2
+fastapi==0.103.1
+uvicorn==0.23.2
+python-dotenv==1.0.0
+loguru==0.7.0
+numpy==1.24.3
+spacy 
+networkx 
+numpy 
+beautifulsoup4
+faiss-cpu 

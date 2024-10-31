@@ -1,0 +1,115 @@
+---
+---
+{% include menu.html title="Gmail Email Fetch" %}
+<hr align=left width=1100>
+
+<h1>Gmail Email Fetch Script</h1>
+
+<h2>Description</h2>
+<p>This Python script uses the <code>Gmail API</code> to authenticate a user and retrieve the last <strong>1000 emails</strong> from their Gmail account. The email data is saved as a <code>JSON</code> file on the local system. Below is a breakdown of the process and the complete script.</p>
+
+<p><hr align=left width=1100>
+<h3>Script Breakdown</h3>
+<ul>
+    <li><strong>OAuth2 Authentication:</strong> Uses Google OAuth credentials to authenticate the user. If valid credentials are found in <code>token.json</code>, they are reused. Otherwise, a new login prompt is initiated.</li>
+    <li><strong>Fetching Emails:</strong> After authentication, the script retrieves up to 1000 emails and extracts key details such as:
+        <ul>
+            <li>Email <strong>ID</strong></li>
+            <li><strong>Snippet</strong> of content</li>
+            <li><strong>Internal Date</strong> (timestamp)</li>
+            <li><strong>Payload</strong> (metadata)</li>
+        </ul>
+    </li>
+    <li><strong>Saving Emails:</strong> All fetched email data is stored in <code>last_1000_emails.json</code> with readable formatting.</li>
+</ul>
+
+<p><hr align=left width=1100>
+<pre><code class="language-python">#!/usr/bin/env python
+
+import os
+import json
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+
+# Define the OAuth scope for read-only Gmail access
+SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
+
+# Authenticate and create Gmail API service
+def authenticate_gmail():
+    creds = None
+    if os.path.exists('token.json'):
+        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+
+    # If there are no valid credentials, authenticate the user
+    if not creds or not creds.valid:
+        flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+        creds = flow.run_local_server(port=0)
+        # Save credentials for future runs
+        with open('token.json', 'w') as token_file:
+            token_file.write(creds.to_json())
+
+    return build('gmail', 'v1', credentials=creds)
+
+# Fetch the last 1000 emails and save them to a JSON file
+def fetch_and_dump_emails():
+    service = authenticate_gmail()
+    results = service.users().messages().list(userId='me', maxResults=1000).execute()
+    messages = results.get('messages', [])
+
+    emails = []
+    for msg in messages:
+        msg_detail = service.users().messages().get(userId='me', id=msg['id']).execute()
+        email_data = {
+            'id': msg_detail['id'],
+            'snippet': msg_detail.get('snippet'),
+            'internalDate': msg_detail.get('internalDate'),
+            'payload': msg_detail.get('payload', {})
+        }
+        emails.append(email_data)
+
+    # Save the emails to a JSON file
+    with open('last_1000_emails.json', 'w') as f:
+        json.dump(emails, f, indent=2)
+
+    print("Successfully dumped the last 1000 emails to 'last_1000_emails.json'.")
+
+# Run the script
+if __name__ == "__main__":
+    fetch_and_dump_emails()
+</code></pre>
+
+
+<p><hr align=left width=1100>
+<h2>Example Output</h2>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Snippet</th>
+            <th>Internal Date</th>
+            <th>Payload</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>1782345678abcdef</td>
+            <td>This is an example snippet from an email.</td>
+            <td>1689465678901</td>
+            <td>{ ... }</td>
+        </tr>
+        <tr>
+            <td>1456fghij789klm</td>
+            <td>Another email snippet with important data.</td>
+            <td>1697462877654</td>
+            <td>{ ... }</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>Conclusion</h2>
+<p>This script provides a simple way to automate the retrieval of email data from Gmail using the <strong>Gmail API</strong>. The data is saved locally as a JSON file, which can be used for further analysis or archival purposes.</p>
+
+
+{% include footer.html %}
+

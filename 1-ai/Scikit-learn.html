@@ -1,0 +1,148 @@
+---
+---
+{% include menu.html title="Scikit-learn" %}
+<hr align=left width=1100>
+
+<div>
+    <h2>Scikit-learn Overview</h2>
+    <p>Scikit-learn is a widely used open-source Python library for machine learning, providing simple and efficient tools for data analysis and
+    modeling. It is built on top of popular libraries like <strong>NumPy</strong>, <strong>SciPy</strong>, and <strong>Matplotlib</strong>, and offers
+    a wide range of algorithms for supervised and unsupervised learning.</p>
+    
+<p><hr align=left width=1100>
+    <h3>Key Features</h3>
+    <ul>
+        <li><strong>Preprocessing:</strong> Tools for scaling, normalization, encoding categorical variables, and handling missing data.</li>
+        <li><strong>Model Selection:</strong> Cross-validation, grid search, and hyperparameter tuning for selecting the best models.</li>
+        <li><strong>Supervised Learning:</strong> Algorithms like linear regression, support vector machines (SVM), decision trees, and random forests.</li>
+        <li><strong>Unsupervised Learning:</strong> Algorithms for clustering (K-means, DBSCAN) and dimensionality reduction (PCA, t-SNE).</li>
+        <li><strong>Metrics:</strong> A variety of metrics for evaluating model performance, such as accuracy, precision, recall, and AUC-ROC.</li>
+        <li><strong>Model Persistence:</strong> Allows saving trained models for later use via joblib or pickle.</li>
+    </ul>
+    
+    <p>Scikit-learn is highly accessible for both beginners and professionals, with well-documented APIs and good integration with other data science tools like Pandas.</p>
+</div>
+
+
+<p><hr align=left width=1100>
+<pre><code class="language-python">
+from sklearn.model_selection import train_test_split
+from sklearn.datasets import load_iris
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+
+# Load the Iris dataset
+data = load_iris()
+X = data.data  # Features
+y = data.target  # Target labels
+
+# Split the dataset into training and testing sets (80% train, 20% test)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Initialize a Random Forest Classifier
+clf = RandomForestClassifier(n_estimators=100, random_state=42)
+
+# Train the classifier
+clf.fit(X_train, y_train)
+
+# Make predictions on the test set
+y_pred = clf.predict(X_test)
+
+# Calculate the accuracy of the model
+accuracy = accuracy_score(y_test, y_pred)
+
+# Print the accuracy
+print(f"Accuracy: {accuracy:.2f}")
+
+# Print a comparison of actual vs predicted values
+print("\nActual vs Predicted:")
+for actual, predicted in zip(y_test, y_pred):
+    print(f"Actual: {actual}, Predicted: {predicted}")
+
+# Print some sample data points from the test set to explain the results
+print("\nSample Data Points (Features) from the Test Set:")
+for i in range(5):
+    print(f"Test Sample {i+1}: {X_test[i]}, Predicted Label: {y_pred[i]}, Actual Label: {y_test[i]}")
+
+#------------------------------------------------------------------------------------#
+# Output
+# Accuracy: 1.00
+# 
+# Actual vs Predicted:
+# Actual: 1, Predicted: 1
+# Actual: 0, Predicted: 0
+# Actual: 2, Predicted: 2
+# Actual: 1, Predicted: 1
+# Actual: 1, Predicted: 1
+# Actual: 0, Predicted: 0
+# Actual: 1, Predicted: 1
+# Actual: 2, Predicted: 2
+# Actual: 1, Predicted: 1
+# Actual: 1, Predicted: 1
+# Actual: 2, Predicted: 2
+# Actual: 0, Predicted: 0
+# Actual: 0, Predicted: 0
+# Actual: 0, Predicted: 0
+# Actual: 0, Predicted: 0
+# Actual: 1, Predicted: 1
+# Actual: 2, Predicted: 2
+# Actual: 1, Predicted: 1
+# Actual: 1, Predicted: 1
+# Actual: 2, Predicted: 2
+# Actual: 0, Predicted: 0
+# Actual: 2, Predicted: 2
+# Actual: 0, Predicted: 0
+# Actual: 2, Predicted: 2
+# Actual: 2, Predicted: 2
+# Actual: 2, Predicted: 2
+# Actual: 2, Predicted: 2
+# Actual: 2, Predicted: 2
+# Actual: 0, Predicted: 0
+# Actual: 0, Predicted: 0
+# 
+# Sample Data Points (Features) from the Test Set:
+# Test Sample 1: [6.1 2.8 4.7 1.2], Predicted Label: 1, Actual Label: 1
+# Test Sample 2: [5.7 3.8 1.7 0.3], Predicted Label: 0, Actual Label: 0
+# Test Sample 3: [7.7 2.6 6.9 2.3], Predicted Label: 2, Actual Label: 2
+# Test Sample 4: [6.  2.9 4.5 1.5], Predicted Label: 1, Actual Label: 1
+# Test Sample 5: [6.8 2.8 4.8 1.4], Predicted Label: 1, Actual Label: 1
+#------------------------------------------------------------------------------------#
+</code></pre>
+
+<p><hr align=left width=1100>
+    <h2>Scikit-learn Code Summary</h2>
+    <p>This code performs the following actions:</p>
+    <ul>
+        <li>Loads the Iris dataset.</li>
+        <li>Splits the dataset into training and test sets.</li>
+        <li>Initializes and trains a Random Forest classifier.</li>
+        <li>Predicts on the test set and calculates the accuracy of the model.</li>
+    </ul>
+
+    <h3>About the Iris Dataset</h3>
+    <p>Yes, the code will automatically load the Iris dataset using the <code>load_iris()</code> function provided by Scikit-learn. The Iris dataset is one of several built-in toy datasets included in Scikit-learn, so you don't need to manually download or load any external files.</p>
+
+    <h3>Overview of How it Works</h3>
+    <ul>
+        <li><code>load_iris()</code> fetches the Iris dataset, which contains data on 150 samples of iris flowers, with features like sepal length, sepal width, petal length, and petal width.</li>
+        <li>The dataset is structured in a <code>Bunch</code> object, which behaves like a dictionary and holds both the data (features) and the target (labels).</li>
+        <li>You can directly access the data and labels using <code>data.data</code> for the features and <code>data.target</code> for the labels.</li>
+    </ul>
+
+    <p>No external setup is needed to use this dataset—it's available right out of the box in Scikit-learn.</p>
+
+
+<p><hr align=left width=1100>
+    <h2>Scikit-learn Comparison</h2>
+    <ul>
+        <li><strong>Comparison of Actual vs Predicted Labels:</strong> This helps you see if the predictions match the actual labels, explaining the high accuracy.</li>
+        <li><strong>Sample Data Points:</strong> This will print a few data points from the test set (both features and corresponding predictions) to show you how well the model is performing on specific samples.</li>
+    </ul>
+
+    <p>If the accuracy is <strong>1.00</strong>, the actual labels and predicted labels should match perfectly for all test samples, and you will see identical values in the comparison output.</p>
+</div>
+
+
+{% include footer.html %}
+</body>
+</html>

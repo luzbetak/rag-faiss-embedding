@@ -1,0 +1,57 @@
+---
+---
+{% include menu.html title="Stable Diffusion Web UI" %}
+<hr align=left width=1100>
+
+    <h1>Stable Diffusion Web UI</h1>
+
+    <h2>1. Clone the Web UI Repository</h2>
+    <a href="https://github.com/AUTOMATIC1111/">stable-diffusion-webui</a>
+    <pre>
+git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git
+cd stable-diffusion-webui
+    </pre>
+
+    <h2>2. Install Dependencies</h2>
+    <pre>
+pip install -r requirements.txt
+    </pre>
+    <p>If some dependencies fail, try installing them manually:</p>
+    <pre>
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+    </pre>
+
+    <h2>3. Launch the Web UI</h2>
+    <p>Run the following command to start the Web UI:</p>
+    <pre>
+python launch.py
+    </pre>
+    <p>If you encounter the <strong>"Torch is not able to use GPU"</strong> error, use this command:</p>
+    <pre>
+export COMMANDLINE_ARGS="--skip-torch-cuda-test"
+python launch.py
+    </pre>
+
+    <h2>4. Access the Web UI in Your Browser</h2>
+    <p>Once the server is running, the terminal will display a message like:</p>
+    <pre>
+Running on local URL: http://127.0.0.1:7860
+    </pre>
+    <p>Open your web browser and go to:</p>
+    <pre>
+http://127.0.0.1:7860
+    </pre>
+
+    <h2>5. Stopping the Server</h2>
+    <p>To stop the Web UI, press <code>Ctrl+C</code> in the terminal where it's running.</p>
+
+    <h2>Optional: Run with MPS (for Mac Users)</h2>
+    <p>If you're using a Mac with an M1/M2 chip, run with MPS acceleration:</p>
+    <pre>
+export PYTORCH_ENABLE_MPS_FALLBACK=1
+python launch.py
+    </pre>
+
+
+{% include footer.html %}
+

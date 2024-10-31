@@ -1,0 +1,108 @@
+---
+---
+{% include menu.html title="Tensors (Multi-Dimensional Array)" %}
+<hr align=left width=1100>
+
+<h1 align=center>Tensor in Machine</h1>
+
+<p><hr align=left width=1100>
+<p>In essence, a tensor is a multidimensional array used to represent data. Think of it as a generalization of vectors and matrices.</p>
+
+<ul>
+<li>A scalar (a single number) is a 0-dimensional tensor.</li>
+<li>A vector (a list of numbers) is a 1-dimensional tensor.</li>
+<li>A matrix (a table of numbers) is a 2-dimensional tensor.</li>
+<li>And we can have tensors with 3, 4, or even more dimensions!</li>
+</ul>
+
+<p>Tensors are the fundamental data structure in deep learning frameworks like TensorFlow and PyTorch. They allow us to efficiently represent and
+process complex data like images (3D tensors: height, width, color channels), videos (4D tensors: time, height, width, color channels), and even
+natural language (where words are embedded in high-dimensional spaces).</p>
+
+<p><hr align=left width=1100>
+<h2>Simple Python Code with Tensors (using NumPy)</h2>
+
+<p>NumPy is a powerful library for numerical computations in Python and provides excellent support for working with tensors (which NumPy calls 'ndarrays').</p>
+
+<pre><code class="language-python">
+import numpy as np
+
+# Create a 2D tensor (a matrix)
+matrix = np.array([[1, 2, 3],
+                   [4, 5, 6]])
+
+# Create a 3D tensor
+tensor_3d = np.array([[[1, 2], [3, 4]],
+                      [[5, 6], [7, 8]]])
+
+# Access elements of the tensors
+print("Element at row 1, column 2 of the matrix:", matrix[1, 2])
+print("Element at depth 0, row 1, column 0 of the 3D tensor:", tensor_3d[0, 1, 0])
+
+# Perform operations on tensors
+sum_of_matrix = np.sum(matrix)
+print("Sum of all elements in the matrix:", sum_of_matrix)
+
+# Output
+# Element at row 1, column 2 of the matrix: 6
+# Element at depth 0, row 1, column 0 of the 3D tensor: 3
+# Sum of all elements in the matrix: 21
+</code>
+</pre>
+
+<p><hr align=left width=1100>
+<p>In this code:</p>
+
+<ol>
+<li>Import the NumPy library.</li>
+<li>Create a 2D tensor (<code>matrix</code>) and a 3D tensor (<code>tensor_3d</code>) using <code>np.array</code>.</li>
+<li>Access specific elements using indexing (remember, indexing starts at 0).</li>
+<li>Perform an operation (summation) on the <code>matrix</code> using <code>np.sum</code>.</li>
+</ol>
+
+<p><hr align=left width=1100>
+<h2>Key Points</h2>
+
+<ul>
+<li><strong>Tensors </strong>enable us to represent and manipulate data with any number of dimensions.</li>
+<li><strong>Deep learning </strong>frameworks heavily rely on tensors for efficient computation on GPUs.</li>
+<li><strong>NumPy </strong>provides a solid foundation for working with tensors in Python.</li>
+</ul>
+
+<p><hr align=left width=1100>
+
+<pre><code class="language-python">
+import numpy as np
+
+# create a 3D tensor with dimensions (2, 3, 4)
+tensor = np.zeros((2, 3, 4))
+
+# fill the tensor with some values
+tensor[0, 0, 0] = 1
+tensor[0, 1, 1] = 2
+tensor[0, 2, 2] = 3
+tensor[1, 0, 3] = 4
+tensor[1, 1, 2] = 5
+tensor[1, 2, 1] = 6
+
+# print the tensor
+print(tensor)
+
+# access a specific value in the tensor (e.g. the value at index (1, 0, 3))
+value = tensor[1, 0, 3]
+print(value)
+
+# sum all the values in the tensor
+total = np.sum(tensor)
+print(total)
+
+# compute the mean of all the values in the tensor
+average = np.mean(tensor)
+print(average)
+</code></pre>
+<p>In this example, we create a 3D tensor with dimensions (2, 3, 4) using the `np.zeros()` function. We then fill the tensor with some values using indexing. We print the tensor, access a specific value, compute the sum and mean of all the values in the tensor using the `np.sum()` and `np.mean()` functions.</p>
+<p>Note that 3D tensors are also commonly used in deep learning frameworks such as TensorFlow or PyTorch. The syntax for creating and manipulating 3D tensors in those frameworks is similar to NumPy, but with additional functionality for building and training machine learning models.</p>
+
+{% include footer.html %}
+</body>
+</html>

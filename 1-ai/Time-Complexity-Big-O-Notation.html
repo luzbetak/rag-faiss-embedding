@@ -1,0 +1,145 @@
+---
+---
+{% include menu.html title="Kevin Luzbetak - Computer Science" %}
+
+
+<h1>Big O Notation - Time Complexity</h1>
+<img src="/images/Big-O-Time-Complexity.png" width=640>
+
+    <p>Big O notation is used to describe the efficiency of an algorithm, focusing on its time complexity (how the execution time grows with input size) and space complexity (how much extra memory is needed). It expresses the worst-case scenario performance of an algorithm.</p>
+
+    <p><hr width=1000 align=left>
+
+    <h2>Common Complexities</h2>
+    <ul>
+        <li><strong>O(1) – Constant time:</strong> The algorithm's runtime does not change with the input size.
+            <ul>
+                <li>Example: Accessing an element in an array by index.</li>
+            </ul>
+        </li>
+        <li><strong>O(log n) – Logarithmic time:</strong> The algorithm reduces the problem size by a constant factor with each step.
+            <ul>
+                <li>Example: Binary search in a sorted array.</li>
+            </ul>
+        </li>
+        <li><strong>O(n) – Linear time:</strong> The runtime grows proportionally with the input size.
+            <ul>
+                <li>Example: Traversing a list of n elements.</li>
+            </ul>
+        </li>
+        <li><strong>O(n log n) – Linearithmic time:</strong> The algorithm performs a linear number of operations for each logarithmic division.
+            <ul>
+                <li>Example: Merge sort and quicksort in their average cases.</li>
+            </ul>
+        </li>
+        <li><strong>O(n²) – Quadratic time:</strong> The runtime grows quadratically with input size.
+            <ul>
+                <li>Example: A double nested loop, like in bubble sort or selection sort.</li>
+            </ul>
+        </li>
+        <li><strong>O(2^n) – Exponential time:</strong> The runtime doubles with each addition to the input size.
+            <ul>
+                <li>Example: Solving the traveling salesman problem using brute force.</li>
+            </ul>
+        </li>
+        <li><strong>O(n!) – Factorial time:</strong> The runtime increases factorially with the input size.
+            <ul>
+                <li>Example: Generating all permutations of a set.</li>
+            </ul>
+        </li>
+    </ul>
+
+
+    <p><hr width=1000 align=left>
+
+
+<h2>Data Structures and Their Time Complexities</h2>
+<ol>
+    <p>
+    <li><strong>Hash Table</strong>
+        <ul>
+            <li>Access: O(1) (average case), O(n) (worst case due to collisions)</li>
+            <li>Search: O(1) (average case)</li>
+            <li>Insertion/Deletion: O(1) (average case)</li>
+        </ul>
+    </li>
+    <li><strong>B-Tree</strong>
+        <ul>
+            <li>Access/Search: O(log n)</li>
+            <li>Insertion/Deletion: O(log n)</li>
+            <li>Space Complexity: O(n)</li>
+        </ul>
+    </li>
+    <li><strong>Balanced Binary Search Tree (e.g., AVL Tree, Red-Black Tree)</strong>
+        <ul>
+            <li>Access/Search: O(log n)</li>
+            <li>Insertion/Deletion: O(log n)</li>
+        </ul>
+    </li>
+    <li><strong>Binary Search Tree (BST)</strong>
+        <ul>
+            <li>Access/Search: O(log n) (average), O(n) (worst case, unbalanced)</li>
+            <li>Insertion/Deletion: O(log n) (average), O(n) (worst case)</li>
+        </ul>
+    </li>
+
+    <p><hr width=1000 align=left>
+
+    <div style="margin-left: 25px;">
+    <h3>B-Tree Balancing</h3>
+    <p>B-Trees are inherently balanced during indexing, so they do not require rebalancing in the way that some other tree structures, like AVL trees or Red-Black trees, do.</p>
+
+    <ul>
+        <li><strong>Balanced Nature:</strong> B-Trees are self-balancing by design. <font color=red>When you insert or delete keys, the tree is adjusted to maintain its balance. This is achieved by splitting or merging nodes as necessary during insertions and deletions, ensuring that all leaf nodes remain at the same level and the tree remains balanced.</font></li>
+        <li><strong>Indexing:</strong> During the indexing process, as new keys are inserted into the B-Tree, the structure automatically ensures that the tree remains balanced. This is done by maintaining certain properties, such as:
+            <ol>
+                <li>All nodes (except the root) having at least a minimum number of children.</li>
+                <li>The height of the tree being kept as low as possible to optimize search operations.</li>
+            </ol>
+        </li>
+    </ul>
+    <p>Because of this, B-Trees are particularly well-suited for use in databases and file systems where efficient data retrieval and storage are critical.</p>
+    </div>
+
+    <p><hr width=1000 align=left>
+
+    <li><strong>Array (Fixed size)</strong>
+        <ul>
+            <li>Access: O(1)</li>
+            <li>Search: O(n)</li>
+            <li>Insertion: O(n) (if resizing required)</li>
+            <li>Deletion: O(n)</li>
+        </ul>
+    </li>
+    <li><strong>Linked List</strong>
+        <ul>
+            <li>Access: O(n)</li>
+            <li>Search: O(n)</li>
+            <li>Insertion/Deletion (at head): O(1)</li>
+        </ul>
+    </li>
+    <li><strong>Heap (Priority Queue)</strong>
+        <ul>
+            <li>Access (max or min): O(1)</li>
+            <li>Insertion/Deletion: O(log n)</li>
+        </ul>
+    </li>
+    <li><strong>Graph (Adjacency Matrix/Adjacency List)</strong>
+        <ul>
+            <li>Search (DFS, BFS): O(V + E), where V is the number of vertices and E is the number of edges</li>
+        </ul>
+    </li>
+    <li><strong>Stack/Queue</strong>
+        <ul>
+            <li>Access: O(n)</li>
+            <li>Insertion/Deletion: O(1)</li>
+        </ul>
+    </li>
+</ol>
+
+  {% include footer.html %}
+
+  </body>
+</html>
+
+

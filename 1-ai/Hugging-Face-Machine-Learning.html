@@ -1,0 +1,50 @@
+---
+---
+{% include menu.html title="Hugging Face Machine Learning" %}
+<hr align=left width=1100>
+
+    <h1>Hugging Face Login</h1>
+
+    <h2>1. Login to Hugging Face CLI</h2>
+    <p>If you haven't logged in yet, authenticate via the command line:</p>
+    <pre>
+huggingface-cli login
+    </pre>
+    <p>This will prompt you to enter your Hugging Face token. You can generate a token from your Hugging Face account:</p>
+    <ul>
+        <li>Go to: <a href="https://huggingface.co/settings/tokens">https://huggingface.co/settings/tokens</a></li>
+        <li>Create a new token with <strong>read access</strong> to the repository.</li>
+    </ul>
+
+    <h2>2. Verify Repository Access</h2>
+    <p>Ensure you have the necessary permissions to access the restricted model:</p>
+    <ul>
+        <li>Visit the model page: 
+            <a href="https://huggingface.co/black-forest-labs/FLUX.1-dev">
+                https://huggingface.co/black-forest-labs/FLUX.1-dev
+            </a>
+        </li>
+        <li>If the model is gated, request access and wait for approval from the maintainers.</li>
+    </ul>
+
+    <h2>3. Set Up API Token</h2>
+    <p>If you're accessing the model programmatically, configure the token properly:</p>
+    <pre>
+export HUGGINGFACE_TOKEN=&lt;your_token_here&gt;
+    </pre>
+    <p>Or set it directly in your script:</p>
+    <pre>
+from huggingface_hub import HfApi
+
+api = HfApi()
+api.login(token="&lt;your_token_here&gt;")
+    </pre>
+
+    <h2>4. Retry Model Download</h2>
+    <p>Once authenticated, run the command or script again to access the model.</p>
+
+    <h2>Note:</h2>
+    <p>If you still encounter issues, double-check that the model owners have granted access. If not, you'll need to wait for their approval.</p>
+
+{% include footer.html %}
+

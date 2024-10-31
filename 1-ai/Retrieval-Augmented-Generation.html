@@ -1,0 +1,116 @@
+---
+---
+{% include menu.html title="RAG (Retrieval Augmented Generation)" %}
+<hr align=left width=1100>
+
+<div>
+  <h2>Building a High-Performance RAG Solution with Pgvectorscale and Python</h2>
+  
+  <h3>1. RAG (Retrieval-Augmented Generation)</h3>
+  <p>
+    RAG enhances the response generation process by retrieving relevant documents from an external knowledge base (e.g., a vector database) and using these documents to inform the generated responses. It combines:
+  </p>
+  <ul>
+    <li><strong>Retriever</strong>: Finds relevant documents based on a query.</li>
+    <li><strong>Generator</strong>: Uses the retrieved documents to generate a more accurate and informed response.</li>
+  </ul>
+
+  <h3>2. Pgvectorscale</h3>
+  <p>
+    <strong>Pgvectorscale</strong> is an extension for PostgreSQL that enables high-performance vector similarity searches using embeddings. It builds on <strong>pgvector</strong>, allowing storage and indexing of high-dimensional vectors, making it suitable for large-scale RAG systems.
+  </p>
+
+  <h3>3. Setting Up the Components</h3>
+  <p>
+    To build the RAG solution, you'll need:
+  </p>
+  <ul>
+    <li>A <strong>vector database</strong> (PostgreSQL with pgvector + Pgvectorscale) to store embeddings.</li>
+    <li><strong>Embeddings</strong> for your documents generated via models like GPT, BERT, etc.</li>
+    <li>A <strong>retrieval algorithm</strong> to find relevant documents.</li>
+    <li>A <strong>generation model</strong> (such as GPT) to use the retrieved documents for response generation.</li>
+  </ul>
+
+  <h3>4. Build a High-Performance RAG Solution</h3>
+
+  <h4>Step 1: Install PostgreSQL, pgvector, and Pgvectorscale</h4>
+  <p>Install the necessary components:</p>
+  <pre><code class="language-sql">
+    CREATE EXTENSION vector;
+    CREATE EXTENSION pgvectorscale;
+  </code></pre>
+
+  <h4>Step 2: Generate Embeddings</h4>
+  <p>Use a model to create embeddings for your documents:</p>
+  <pre><code class="language-python">
+    from sentence_transformers import SentenceTransformer
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+    
+    documents = ["Your document text here", "Another document text"]
+    embeddings = model.encode(documents)
+  </code></pre>
+
+  <h4>Step 3: Store Embeddings in PostgreSQL</h4>
+  <p>Create a table to store the embeddings:</p>
+  <pre><code class="language-sql">
+    CREATE TABLE documents (
+        id SERIAL PRIMARY KEY,
+        text TEXT,
+        embedding VECTOR(768)
+    );
+  </code></pre>
+  <p>Insert documents and embeddings:</p>
+  <pre><code class="language-python">
+    import psycopg2
+    conn = psycopg2.connect("dbname=test user=postgres")
+    cur = conn.cursor()
+
+    cur.execute("INSERT INTO documents (text, embedding) VALUES (%s, %s)",
+                (document_text, embedding.tolist()))
+    conn.commit()
+  </code></pre>
+
+  <h4>Step 4: Retrieve Relevant Documents</h4>
+  <p>Query the vector database for the most relevant documents:</p>
+  <pre><code class="language-sql">
+    SELECT * FROM documents
+    ORDER BY embedding <=> query_embedding
+    LIMIT 5;
+  </code></pre>
+
+  <h4>Step 5: Generate Responses Using the Retrieved Documents</h4>
+  <p>Use a generation model like GPT to create a response:</p>
+  <pre><code class="language-python">
+    from transformers import GPT2LMHeadModel, GPT2Tokenizer
+
+    model = GPT2LMHeadModel.from_pretrained('gpt2')
+    tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+
+    prompt = f"Based on the following documents:\n{retrieved_documents}\nAnswer the question: {user_query}"
+
+    inputs = tokenizer(prompt, return_tensors="pt")
+    outputs = model.generate(inputs['input_ids'], max_length=500)
+    response = tokenizer.decode(outputs[0])
+    print(response)
+  </code></pre>
+
+  <h3>5. Optimization for High Performance</h3>
+  <p>To ensure high performance, use indexing and parallel queries in PostgreSQL. For large-scale datasets, distribute the retrieval tasks across multiple nodes.</p>
+
+  <h3>6. Use Cases</h3>
+  <ul>
+    <li><strong>Customer Support</strong>: Augment chatbot answers with external documents.</li>
+    <li><strong>Search Engines</strong>: Provide contextual responses to user queries.</li>
+    <li><strong>Knowledge Management</strong>: Retrieve and synthesize information from large repositories.</li>
+  </ul>
+</div>
+
+<h3>References:</h3>
+  <ul>
+      <li><a href="https://github.com/luzbetak/pgvectorscale-rag-solution">High-Performance RAG Solution with Pgvectorscale and Python</li>
+      <li><a href="https://www.youtube.com/watch?v=hAdEuDBN57g">Tutorial: Build high-performance RAG</li>
+  </ul>
+
+
+{% include footer.html %}
+

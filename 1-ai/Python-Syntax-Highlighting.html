@@ -1,0 +1,60 @@
+---
+---
+{% include menu.html title="Kevin Luzbetak - Computer Science" %}
+
+<body>
+
+<h1>Python Syntax Highlighting</h1>
+
+<!-- Example Python code block -->
+<pre><code class="language-python">
+def greet(name):
+    print(f"Hello, {name}!")
+
+def add(a, b):
+    return a + b
+
+if __name__ == "__main__":
+    greet("World")
+    result = add(5, 3)
+    print(f"5 + 3 = {result}")
+</code></pre>
+
+<h1>SQL Syntax Highlighting</h1>
+<pre><code class="language-sql">
+SELECT name, age 
+FROM users 
+WHERE age > 18 
+ORDER BY age DESC;
+</code></pre>
+
+<!-- Example Bash code block -->
+<h1>Bash Syntax Highlighting</h1>
+<pre><code class="language-bash">
+#!/bin/bash
+echo "Hello, World!"
+mkdir new_directory
+cd new_directory
+</code></pre>
+
+<!-- Example Go code block -->
+<h1>Golang Syntax Highlighting</h1>
+<pre><code class="language-go">
+package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("Hello, World!")
+}
+
+func add(a int, b int) int {
+    return a + b
+}
+</code></pre>
+
+  {% include footer.html %}
+
+  </body>
+</html>
+    

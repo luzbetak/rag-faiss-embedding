@@ -1,0 +1,105 @@
+---
+---
+{% include menu.html title="Email Processing with FAISS and OpenAI Embeddings" %}
+<hr align=left width=1100>
+
+<h1>Email Processing with FAISS and OpenAI Embeddings</h1>
+
+<h2>Description</h2>
+<p>This Python script performs the following tasks:</p>
+<ul>
+    <li><strong>Loads email data</strong> from a JSON file (<code>full_emails.json</code>).</li>
+    <li><strong>Extracts relevant fields</strong> such as content, ID, and timestamp using a schema.</li>
+    <li><strong>Cleans the email content</strong> by removing URLs, extra spaces, and unnecessary text.</li>
+    <li><strong>Converts the cleaned content</strong> into <code>Document</code> objects for further processing.</li>
+    <li><strong>Generates embeddings</strong> for the email documents using <code>OpenAIEmbeddings</code>.</li>
+    <li><strong>Stores the embeddings</strong> in a <code>FAISS</code> vector database for fast similarity search.</li>
+    <li><strong>Saves the FAISS index</strong> to disk for future use.</li>
+</ul>
+
+<p><hr align=left width=1100>
+<pre><code class=language-python>#!/usr/bin/env python
+
+import json
+import re
+import os
+from datetime import datetime
+from langchain_community.document_loaders import JSONLoader
+from langchain_openai import OpenAIEmbeddings  # Updated import
+from langchain_community.vectorstores import FAISS
+from langchain.schema import Document  # Import Document class
+
+# Define jq schema to extract relevant fields from the JSON
+jq_schema = ".[] | {page_content: .content, metadata: {id: .id, date: .date}}"
+
+# Initialize the JSONLoader with the schema
+loader = JSONLoader("full_emails.json", jq_schema=jq_schema, text_content=False)
+documents = loader.load()
+
+# Initialize OpenAI embeddings
+embeddings = OpenAIEmbeddings()
+
+# Clean email content function
+def clean_content(text):
+    text = re.sub(r'http\S+', '', text)  # Remove URLs
+    text = re.sub(r'-{2,}', '-', text)  # Replace sequences of dashes with one dash
+    text = re.sub(r'(unsubscribe.*|learn why we included.*|you are receiving.*)', ''
+                                                    , text, flags=re.IGNORECASE)
+    text = re.sub(r'\[image:.*?\]|\&\w+;', '', text)  # Remove HTML entities
+    return re.sub(r'\s+', ' ', text).strip()  # Remove extra spaces
+
+# Convert the cleaned content into Document objects
+processed_docs = []
+for doc in documents:
+    try:
+        content_data = json.loads(doc.page_content)  # Parse content
+        content = clean_content(content_data.get("page_content", "No Content"))
+        metadata = content_data.get("metadata", {})
+        email_id = metadata.get("id", "Unknown ID")
+        timestamp = int(metadata.get("date", 0)) / 1000  # Convert to seconds
+        date = datetime.fromtimestamp(timestamp).isoformat() if timestamp > 0 else "Unknown"
+
+        # Create Document object
+        processed_docs.append(
+            Document(page_content=content, metadata={"id": email_id, "date": date})
+        )
+
+    except json.JSONDecodeError as e:
+        print(f"Error parsing JSON content: {e}")
+
+# Create FAISS vector store with the Document objects
+vector_store = FAISS.from_documents(processed_docs, embeddings)
+
+# Save the FAISS index to disk
+faiss_index_path = "faiss_index"
+vector_store.save_local(faiss_index_path)
+print(f"FAISS index saved to '{faiss_index_path}'")
+</code></pre>
+
+<p><hr align=left width=1100>
+<h2>Explanation of the Code</h2>
+<p>This script processes a set of emails and builds a vector index for efficient search and retrieval using FAISS.</p>
+
+<ul>
+    <li><strong>JSONLoader:</strong> Loads email data from the JSON file using the provided schema to extract content, ID, and timestamp.</li>
+    <li><strong>Cleaning Content:</strong> The <code>clean_content()</code> function removes unwanted elements like URLs, extra dashes, and boilerplate text (e.g., unsubscribe messages).</li>
+    <li><strong>Document Objects:</strong> Each email is converted into a <code>Document</code> object, which stores both the cleaned content and metadata.</li>
+    <li><strong>OpenAI Embeddings:</strong> Generates vector embeddings for each document to enable similarity search.</li>
+    <li><strong>FAISS Vector Store:</strong> Stores the documents' embeddings in a FAISS index for fast searching.</li>
+    <li><strong>Saving the Index:</strong> The FAISS index is saved locally for future searches.</li>
+</ul>
+
+<p><hr align=left width=1100>
+<h2>Output</h2>
+<p>When the script is run, it displays the following message:</p>
+<pre><code class=language-markdown>
+FAISS index saved to 'faiss_index'
+</code></pre>
+
+<p><hr align=left width=1100>
+<h2>Conclusion</h2>
+<p>This script leverages <strong>OpenAI embeddings</strong> and the <strong>FAISS</strong> vector store to process and index email data, allowing for efficient similarity searches. This setup can be extended to support various document types or integrate with other machine learning models for advanced use cases.</p>
+
+
+{% include footer.html %}
+
