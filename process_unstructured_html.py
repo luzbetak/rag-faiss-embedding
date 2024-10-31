@@ -13,8 +13,8 @@ from json import JSONEncoder
 
 # Configure OpenBLAS to avoid warnings
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
-os.environ["OPENBLAS_MAIN_FREE"] = "1"
-os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_MAIN_FREE"]   = "1"
+os.environ["OMP_NUM_THREADS"]      = "1"
 
 from bs4 import BeautifulSoup
 import spacy
@@ -28,7 +28,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 MAX_CONTENT_LENGTH = 512  # Maximum content length in characters
-MAX_SENTENCES = 2        # Maximum number of sentences for summary
+MAX_SENTENCES      = 2    # Maximum number of sentences for summary
 
 class DateTimeEncoder(JSONEncoder):
     """Custom JSON encoder for datetime objects"""
@@ -44,9 +44,9 @@ class IndexEntry:
     def __init__(self, url: str, title: str, content: str):
         self.id = IndexEntry._id_counter  # Assign the current counter value as the ID
         IndexEntry._id_counter += 1       # Increment the counter for the next entry
-        self.url = url
-        self.title = title
-        self.content = content[:MAX_CONTENT_LENGTH] if content else ""  # Limit content length
+        self.url        = url
+        self.title      = title
+        self.content    = content[:MAX_CONTENT_LENGTH] if content else ""  # Limit content length
         self.created_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()
 
@@ -295,25 +295,25 @@ def main():
     )
     parser.add_argument(
         "--output-dir",
-        default="data",
-        help="Output directory for the content index"
+        default = "data",
+        help    = "Output directory for the content index"
     )
     parser.add_argument(
         "--debug",
-        action="store_true",
-        help="Enable debug logging"
+        action = "store_true",
+        help   = "Enable debug logging"
     )
     parser.add_argument(
         "--max-content-length",
-        type=int,
-        default=512,
-        help="Maximum length of content in characters"
+        type    = int,
+        default = 512,
+        help    = "Maximum length of content in characters"
     )
     parser.add_argument(
         "--max-sentences",
-        type=int,
-        default=2,
-        help="Maximum number of sentences in summary"
+        type    = int,
+        default = 2,
+        help    = "Maximum number of sentences in summary"
     )
 
     args = parser.parse_args()
