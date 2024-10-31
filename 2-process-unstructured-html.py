@@ -54,42 +54,6 @@ class IndexEntry:
             'updated_at': self.updated_at.isoformat()
         }
 
-# Updated `process_html_file` function
-def process_html_file(self, file_path: Path) -> Optional[IndexEntry]:
-    """Process a single HTML file and return a content entry"""
-    try:
-        logger.debug(f"Processing file: {file_path}")
-        with open(file_path, 'r', encoding='utf-8') as f:
-            soup = BeautifulSoup(f, 'html.parser')
-
-            # Remove script and style elements
-            for element in soup(['script', 'style']):
-                element.decompose()
-
-            # Extract and clean text
-            body_text = soup.get_text(separator=' ', strip=True)
-            clean_body_text = self.clean_text(body_text)
-
-            if not clean_body_text:
-                logger.warning(f"Skipping {file_path}: No meaningful content")
-                return None
-
-            content = self.summarize_text(clean_body_text)
-            relative_path = str(file_path.relative_to(Path.cwd()))
-            url_path = f"https://kevinluzbetak.com/{relative_path}"
-
-            # Return a new IndexEntry with an incremented ID
-            return IndexEntry(
-                url=url_path.strip(),
-                title=file_path.name,
-                content=content
-            )
-
-    except Exception as e:
-        logger.error(f"Error processing {file_path}: {e}")
-        return None
-
-
 class TextSummarizer:
     def __init__(self, output_dir: str = "data", mongodb_uri: str = "mongodb://localhost:27017/"):
         """Initialize the text summarizer with spaCy NLP and MongoDB connection"""
@@ -126,6 +90,39 @@ class TextSummarizer:
         doc = self.nlp(text)
         sentences = [sent.text.strip() for sent in doc.sents]
         return ' '.join(sentences[:3])
+
+    def process_html_file(self, file_path: Path) -> Optional[IndexEntry]:
+        """Process a single HTML file and return a content entry"""
+        try:
+            logger.debug(f"Processing file: {file_path}")
+            with open(file_path, 'r', encoding='utf-8') as f:
+                soup = BeautifulSoup(f, 'html.parser')
+
+                # Remove script and style elements
+                for element in soup(['script', 'style']):
+                    element.decompose()
+
+                # Extract and clean text
+                body_text = soup.get_text(separator=' ', strip=True)
+                clean_body_text = self.clean_text(body_text)
+
+                if not clean_body_text:
+                    logger.warning(f"Skipping {file_path}: No meaningful content")
+                    return None
+
+                content = self.summarize_text(clean_body_text)
+                relative_path = str(file_path.relative_to(Path.cwd()))
+                url_path = f"https://kevinluzbetak.com/{relative_path}"
+
+                return IndexEntry(
+                    url=url_path.strip(),
+                    title=file_path.name,
+                    content=content
+                )
+
+        except Exception as e:
+            logger.error(f"Error processing {file_path}: {e}")
+            return None
 
     def _write_to_mongodb(self, entries: List[IndexEntry]) -> None:
         """Write entries to MongoDB"""
