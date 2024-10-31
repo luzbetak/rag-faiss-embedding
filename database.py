@@ -8,17 +8,30 @@ import numpy as np
 from faiss_store import FAISSVectorStore
 
 class Database:
+    _instance = None
+    _initialized = False
+    
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(Database, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self, db_path: str = "data/documents.db"):
         """Initialize SQLite database connection"""
+        if self._initialized:
+            return
+            
         self.db_path = db_path
         Path(db_path).parent.mkdir(exist_ok=True)
         self.conn = sqlite3.connect(db_path)
         self.cursor = self.conn.cursor()
         self._create_table()
         
-        # Initialize FAISS vector store
+        # Initialize FAISS vector store (will reuse existing instance if any)
         self.vector_store = FAISSVectorStore()
         logger.info("Initialized Database with FAISS vector store")
+        
+        self._initialized = True
 
     def _create_table(self):
         """Create documents table if it doesn't exist"""
@@ -86,5 +99,6 @@ class Database:
 
     def close(self):
         """Close database connection"""
-        self.conn.close()
-        logger.info("Database connection closed")
+        if hasattr(self, 'conn'):
+            self.conn.close()
+            logger.info("Database connection closed")
