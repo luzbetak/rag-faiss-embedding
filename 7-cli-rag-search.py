@@ -11,6 +11,8 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich.text import Text
+from datastore_manager import RAGDatabaseInitializer
+
 
 # Set OpenBLAS environment variables
 os.environ.update({
@@ -23,6 +25,8 @@ class CLISearch:
     def __init__(self):
         self.query_engine = QueryEngine()
         self.console = Console()
+        # Load FAISS index from disk
+        RAGDatabaseInitializer().load_indices()
 
     def print_results(self, results):
         if not results:
