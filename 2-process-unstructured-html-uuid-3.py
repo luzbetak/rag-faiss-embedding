@@ -11,6 +11,7 @@ import argparse
 from pymongo import MongoClient
 from datetime import datetime
 from json import JSONEncoder
+import uuid
 
 from bs4 import BeautifulSoup
 import spacy
@@ -32,11 +33,8 @@ class DateTimeEncoder(JSONEncoder):
 
 class IndexEntry:
     """Data class for storing content data"""
-    _id_counter = 1  # Class variable to keep track of incremental IDs
-
     def __init__(self, url: str, title: str, content: str):
-        self.id = IndexEntry._id_counter  # Assign the current counter value as the ID
-        IndexEntry._id_counter += 1       # Increment the counter for the next entry
+        self.id = str(uuid.uuid4())  # Generate a unique ID
         self.url = url
         self.title = title
         self.content = content

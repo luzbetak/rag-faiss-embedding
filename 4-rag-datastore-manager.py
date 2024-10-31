@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import uuid
 import os
 import sys
 from pathlib import Path
@@ -62,8 +61,8 @@ class RAGDatabaseInitializer:
             self.db.collection.drop()
             
             # Create MongoDB indices
-            self.db.collection.create_index([("id", 1)], unique=True)
-            self.db.collection.create_index([("content", "text")])
+            self.db.collection.create_index([("url", 1)], unique=True)
+            self.db.collection.create_index([("title", 1)])
             
             # Initialize new FAISS index
             vector_dim = self.vectorization_pipeline.model.get_sentence_embedding_dimension()
@@ -72,57 +71,42 @@ class RAGDatabaseInitializer:
             # Verify initialization
             count = self.db.collection.count_documents({})
             logger.info(f"Database initialized with {count} documents")
+            logger.info("Database initialized successfully!")
             return True
         except Exception as e:
             logger.error(f"Database initialization error: {e}", exc_info=True)
             return False
 
-
     def load_documents(self) -> bool:
-        """Load and process documents from search index, ensuring unique URLs"""
+        """Load and process documents from search index"""
         if not self.verify_search_index():
             return False
-    
+
         try:
-            # Load documents from search index JSON
-            with open(Config.SEARCH_INDEX_PATH, 'r', encoding='utf-8') as f:
-                documents = json.load(f)
-    
-            # Deduplicate documents by 'url'
-            unique_docs = {}
-            for doc in documents:
-                if 'url' in doc:
-                    unique_docs[doc['url']] = doc
-    
-            # Convert deduplicated values back to list
-            documents = list(unique_docs.values())
-    
-            # Ensure each document has a unique 'id'
-            for doc in documents:
-                if 'id' not in doc or not doc['id']:
-                    doc['id'] = str(uuid.uuid4())  # Assign a unique ID if missing
-    
-            # Generate embeddings for document content
+            # Load and preprocess documents
+            documents = self.data_pipeline.load_data(str(Config.SEARCH_INDEX_PATH))
+            processed_docs = self.data_pipeline.preprocess_data(documents)
+            
+            if not processed_docs:
+                logger.error("No documents to process")
+                return False
+
+            # Generate embeddings
             embeddings = self.vectorization_pipeline.generate_embeddings(
-                [doc["content"] for doc in documents]
+                [doc["content"] for doc in processed_docs]
             )
-    
-            # Store documents with embeddings
-            self.db.batch_store_documents(documents, embeddings)
-    
-            # Insert deduplicated documents into MongoDB
-            result = self.db.collection.insert_many(documents)
-            logger.info(f"Successfully inserted {len(result.inserted_ids)} documents into MongoDB")
-    
-            # Verify storage in MongoDB
+            
+            # Store documents and embeddings
+            self.db.batch_store_documents(processed_docs, embeddings)
+            
+            # Verify storage
             count = self.db.collection.count_documents({})
             logger.info(f"Loaded {count} documents successfully!")
             return True
-    
+
         except Exception as e:
             logger.error(f"Document loading error: {e}", exc_info=True)
             return False
-
 
     def save_indices(self) -> bool:
         """Save FAISS index to disk"""
@@ -277,9 +261,20 @@ def main():
             except KeyboardInterrupt:
                 print("\nExiting...")
                 break
+            except Exception as e:
+                logger.error(f"Error in menu operation: {e}", exc_info=True)
+                print(f"\nError: {e}")
+                input("\nPress Enter to continue...")
 
     except Exception as e:
-        logger.error(f"Fatal error in main: {e}")
+        logger.error(f"Fatal error in main: {e}", exc_info=True)
+        sys.exit(1)
+    finally:
+        # Cleanup
+        try:
+            rag_init.db.close()
+        except:
+            pass
 
 if __name__ == "__main__":
     main()
