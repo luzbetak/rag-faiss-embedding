@@ -74,19 +74,40 @@ class TextSummarizer:
         logger.info(f"Connected to MongoDB database: {self.db.name}")
 
     def _initialize_spacy(self) -> Language:
-        """Initialize spaCy with error handling"""
-        try:
-            nlp = spacy.load("en_core_web_sm")
-            # Configure pipeline for better summarization
-            nlp.add_pipe("sentencizer")
-            logger.info("Loaded spaCy model with sentencizer")
-            return nlp
-        except OSError:
-            logger.warning("SpaCy model 'en_core_web_sm' not found. Installing...")
-            os.system("python -m spacy download en_core_web_sm")
-            nlp = spacy.load("en_core_web_sm")
-            nlp.add_pipe("sentencizer")
-            return nlp
+            """Initialize spaCy with error handling"""
+            try:
+                # Try to load the medium model first (has word vectors)
+                try:
+                    nlp = spacy.load("en_core_web_md")
+                    if nlp.has_vectors:
+                        logger.info("Loaded spaCy medium model with word vectors")
+                    else:
+                        logger.warning("Loaded model does not have word vectors")
+                except OSError:
+                    logger.warning("SpaCy model 'en_core_web_md' not found. Installing...")
+                    os.system("python -m spacy download en_core_web_md")
+                    nlp = spacy.load("en_core_web_md")
+                    logger.info("Installed and loaded spaCy medium model")
+    
+                # Add sentencizer if not already present
+                if "sentencizer" not in nlp.pipe_names:
+                    nlp.add_pipe("sentencizer")
+                    logger.info("Added sentencizer to pipeline")
+    
+                return nlp
+    
+            except Exception as e:
+                logger.error(f"Error loading spaCy model: {e}")
+                logger.warning("Falling back to small model without word vectors")
+                
+                try:
+                    nlp = spacy.load("en_core_web_sm")
+                    if "sentencizer" not in nlp.pipe_names:
+                        nlp.add_pipe("sentencizer")
+                    return nlp
+                except Exception as e:
+                    logger.error(f"Failed to load fallback model: {e}")
+                    raise
 
     @staticmethod
     def clean_text(text: str) -> str:
@@ -104,51 +125,38 @@ class TextSummarizer:
         return text.strip()
 
     def extract_key_sentences(self, doc) -> List[str]:
-        """Extract key sentences based on position and length"""
-        sentences = list(doc.sents)
-        if not sentences:
-            return []
-
-        # Always include the first sentence
-        key_sentences = [sentences[0]]
-
-        # Add additional sentences based on length and content
-        for sent in sentences[1:]:
-            # Skip very short sentences
-            if len(sent.text.split()) < 3:
-                continue
-            # Skip sentences that are too similar to what we already have
-            if any(self.nlp(sent.text).similarity(self.nlp(existing.text)) > 0.7 
-                   for existing in key_sentences):
-                continue
-            key_sentences.append(sent)
-            if len(key_sentences) >= MAX_SENTENCES:
-                break
-
-        return [sent.text.strip() for sent in key_sentences]
-
-    def summarize_text(self, text: str) -> str:
-        """Summarize the text using spaCy"""
-        try:
-            if not text.strip():
-                return ""
+            """Extract key sentences based on position and length"""
+            sentences = list(doc.sents)
+            if not sentences:
+                return []
+    
+            # Always include the first sentence if it's long enough
+            key_sentences = []
+            if sentences and len(sentences[0].text.split()) >= 3:
+                key_sentences.append(sentences[0])
+    
+            # Add additional sentences based on length and content
+            for sent in sentences[1:]:
+                # Skip very short sentences
+                if len(sent.text.split()) < 3:
+                    continue
+                    
+                # Check similarity only if model has vectors
+                if hasattr(self.nlp, 'has_vectors') and self.nlp.has_vectors:
+                    try:
+                        # Skip sentences that are too similar to what we already have
+                        if any(sent.similarity(existing) > 0.7 for existing in key_sentences):
+                            continue
+                    except Exception as e:
+                        logger.debug(f"Similarity check failed: {e}")
+                        # If similarity check fails, fall back to length-based selection
+                        pass
                 
-            doc = self.nlp(text)
-            key_sentences = self.extract_key_sentences(doc)
-            summary = ' '.join(key_sentences)
-            
-            # Ensure summary is within length limit
-            if len(summary) > MAX_CONTENT_LENGTH:
-                # Try to truncate at a sentence boundary
-                summary = summary[:MAX_CONTENT_LENGTH]
-                last_period = summary.rfind('.')
-                if last_period > 0:
-                    summary = summary[:last_period + 1]
-            
-            return summary.strip()
-        except Exception as e:
-            logger.error(f"Error summarizing text: {e}")
-            return text[:MAX_CONTENT_LENGTH]
+                key_sentences.append(sent)
+                if len(key_sentences) >= MAX_SENTENCES:
+                    break
+    
+            return [sent.text.strip() for sent in key_sentences]
 
     def extract_text_from_html(self, soup: BeautifulSoup) -> str:
         """Extract text from HTML while preserving important content"""
@@ -172,6 +180,29 @@ class TextSummarizer:
         pre_texts = '\n'.join(pre.get_text() for pre in pre_contents)
         
         return f"{text}\n{pre_texts}" if pre_texts else text
+
+    def summarize_text(self, text: str) -> str:
+        """Summarize the text using spaCy"""
+        try:
+            if not text.strip():
+                return ""
+                
+            doc = self.nlp(text)
+            key_sentences = self.extract_key_sentences(doc)
+            summary = ' '.join(key_sentences)
+            
+            # Ensure summary is within length limit
+            if len(summary) > MAX_CONTENT_LENGTH:
+                # Try to truncate at a sentence boundary
+                summary = summary[:MAX_CONTENT_LENGTH]
+                last_period = summary.rfind('.')
+                if last_period > 0:
+                    summary = summary[:last_period + 1]
+            
+            return summary.strip()
+        except Exception as e:
+            logger.error(f"Error summarizing text: {e}")
+            return text[:MAX_CONTENT_LENGTH]
 
     def process_html_file(self, file_path: Path) -> Optional[IndexEntry]:
         """Process a single HTML file and return a content entry"""
@@ -205,21 +236,16 @@ class TextSummarizer:
     def _write_to_mongodb(self, entries: List[IndexEntry]) -> None:
         """Write entries to MongoDB"""
         try:
-            # Convert entries to dictionaries
             documents = [entry.to_dict() for entry in entries if entry and entry.url and entry.title and entry.content]
             
             if not documents:
                 logger.error("No valid entries to write to MongoDB!")
                 return
 
-            # Clear existing documents
             self.collection.delete_many({})
-            
-            # Insert new documents
             result = self.collection.insert_many(documents)
             logger.info(f"Successfully inserted {len(result.inserted_ids)} documents into MongoDB")
             
-            # Create text index for search
             self.collection.create_index([("content", "text")])
             logger.info("Created text index on content field")
 
@@ -281,7 +307,6 @@ class TextSummarizer:
 
         logger.info(f"Generated {len(entries)} valid entries")
 
-        # Write to both MongoDB and JSON file
         self._write_to_mongodb(entries)
         self._write_index_file(entries)
 
@@ -331,7 +356,6 @@ def main():
     if args.debug:
         logger.setLevel(logging.DEBUG)
 
-    # Update global constants based on arguments
     global MAX_CONTENT_LENGTH, MAX_SENTENCES
     MAX_CONTENT_LENGTH = args.max_content_length
     MAX_SENTENCES = args.max_sentences
