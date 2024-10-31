@@ -11,3 +11,4 @@ networkx
 numpy 
 beautifulsoup4
 faiss-cpu 
+rich

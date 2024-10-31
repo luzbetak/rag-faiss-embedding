@@ -1,20 +1,23 @@
 #!/usr/bin/env python3
+# query.py
 
 import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from loguru import logger
-from typing import List, Optional
+from typing import List, Optional, Dict
 from database import Database
 from vectorization import VectorizationPipeline
 from transformers import pipeline
-import numpy as np
+from config import Config
 
 # Set OpenBLAS environment variables
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
-os.environ['OPENBLAS_MAIN_FREE'] = '1'
-os.environ['OMP_NUM_THREADS'] = '1'
+os.environ.update({
+    'OPENBLAS_NUM_THREADS': '1',
+    'OPENBLAS_MAIN_FREE': '1',
+    'OMP_NUM_THREADS': '1'
+})
 
 # Global QueryEngine instance
 query_engine = None
@@ -48,7 +51,7 @@ class SearchRequest(BaseModel):
     top_k: Optional[int] = 3
 
 class SearchResponse(BaseModel):
-    similar_documents: List[dict]
+    similar_documents: List[Dict]
     generated_response: str
 
 class QueryEngine:
@@ -56,20 +59,21 @@ class QueryEngine:
         """Initialize the query engine with necessary components"""
         self.db = Database()
         self.vectorization = VectorizationPipeline()
-        self.generator = pipeline('text2text-generation', model='google/flan-t5-base', max_length=200)
-        logger.info("Initialized query engine")
+        self.generator = pipeline('text2text-generation', 
+                                model='google/flan-t5-base', 
+                                max_length=200)
+        logger.info("Query engine initialized")
 
-    async def search(self, query: str, top_k: int = 3) -> List[dict]:
+    async def search(self, query: str, top_k: int = Config.TOP_K) -> List[Dict]:
         """Perform vector similarity search"""
         try:
             # Generate query embedding
             query_embedding = self.vectorization.generate_embeddings([query])[0]
             
-            # Log the query and embedding information
-            logger.info(f"Searching for query: {query}")
-            logger.info(f"Generated embedding of length: {len(query_embedding)}")
+            # Log the search request
+            logger.info(f"Searching for: {query}")
             
-            # Get similar documents
+            # Get similar documents using FAISS/MongoDB hybrid search
             similar_docs = self.db.get_similar_documents(
                 query_embedding=query_embedding,
                 top_k=top_k
@@ -77,34 +81,19 @@ class QueryEngine:
             
             logger.info(f"Found {len(similar_docs)} similar documents")
             
-            if not similar_docs:
-                logger.warning("No similar documents found")
-                return []
-            
-            # Format the results
-            formatted_docs = []
-            for doc in similar_docs:
-                formatted_doc = {
-                    'title': doc.get('title', 'N/A'),
-                    'content': doc.get('content', 'N/A'),
-                    'url': doc.get('url', 'N/A'),
-                    'score': float(doc.get('score', 0.0))
-                }
-                formatted_docs.append(formatted_doc)
-            
-            return formatted_docs
+            return similar_docs
             
         except Exception as e:
             logger.error(f"Search error: {str(e)}")
-            return []
+            raise
 
-    async def generate_response(self, query: str, documents: List[dict]) -> str:
+    async def generate_response(self, query: str, documents: List[Dict]) -> str:
         """Generate a response based on the query and retrieved documents"""
         try:
             if not documents:
-                return "No relevant documents found for your query."
+                return "No relevant documents found to answer your query."
                 
-            # Combine document contents with titles and scores
+            # Format context from documents
             context_parts = []
             for i, doc in enumerate(documents, 1):
                 score = doc.get('score', 0.0)
@@ -116,7 +105,7 @@ class QueryEngine:
             
             context = "\n".join(context_parts)
             
-            # Create prompt for the generator
+            # Create prompt
             prompt = (
                 f"Based on the following documents, answer this question: {query}\n\n"
                 f"Context:\n{context}\n\n"
@@ -178,3 +167,4 @@ async def search(request: SearchRequest):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
