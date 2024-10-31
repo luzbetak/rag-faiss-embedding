@@ -66,24 +66,28 @@ class TextSummarizer:
         """Initialize the text summarizer with spaCy NLP"""
         self.output_dir = Path(output_dir).resolve()
         self.nlp = self._initialize_spacy()
+        self.has_vectors = self._check_vectors()
         logger.info(f"Initialized TextSummarizer with output directory: {self.output_dir}")
+
+    def _check_vectors(self) -> bool:
+        """Check if the loaded model has word vectors"""
+        test_doc = self.nlp("test")
+        return test_doc.vector.any()
 
     def _initialize_spacy(self) -> Language:
         """Initialize spaCy with error handling"""
-        try:
-            # Try to load the medium model first (has word vectors)
+        def load_model(model_name: str) -> Optional[Language]:
             try:
-                nlp = spacy.load("en_core_web_md")
-                if nlp.has_vectors:
-                    logger.info("Loaded spaCy medium model with word vectors")
-                else:
-                    logger.warning("Loaded model does not have word vectors")
+                return spacy.load(model_name)
             except OSError:
-                logger.warning("SpaCy model 'en_core_web_md' not found. Installing...")
-                os.system("python -m spacy download en_core_web_md")
-                nlp = spacy.load("en_core_web_md")
-                logger.info("Installed and loaded spaCy medium model")
+                logger.warning(f"SpaCy model '{model_name}' not found. Installing...")
+                os.system(f"python -m spacy download {model_name}")
+                return spacy.load(model_name)
 
+        try:
+            # Try to load the medium model first
+            nlp = load_model("en_core_web_md")
+            
             # Add sentencizer if not already present
             if "sentencizer" not in nlp.pipe_names:
                 nlp.add_pipe("sentencizer")
@@ -93,31 +97,16 @@ class TextSummarizer:
 
         except Exception as e:
             logger.error(f"Error loading spaCy model: {e}")
-            logger.warning("Falling back to small model without word vectors")
+            logger.warning("Falling back to small model")
             
             try:
-                nlp = spacy.load("en_core_web_sm")
+                nlp = load_model("en_core_web_sm")
                 if "sentencizer" not in nlp.pipe_names:
                     nlp.add_pipe("sentencizer")
                 return nlp
             except Exception as e:
                 logger.error(f"Failed to load fallback model: {e}")
                 raise
-
-    @staticmethod
-    def clean_text(text: str) -> str:
-        """Clean and normalize text"""
-        # Remove common HTML-related words
-        text = re.sub(r'\b(menu|html|title|include|nav|header|footer)\b', '', text, flags=re.IGNORECASE)
-        # Remove special characters but keep sentence structure
-        text = re.sub(r'[^\w\s\.\!\?-]', ' ', text)
-        # Replace multiple dashes with space
-        text = re.sub(r'-+', ' ', text)
-        # Replace multiple spaces with single space
-        text = re.sub(r'\s+', ' ', text)
-        # Replace multiple periods with single period
-        text = re.sub(r'\.+', '.', text)
-        return text.strip()
 
     def extract_key_sentences(self, doc) -> List[str]:
         """Extract key sentences based on position and length"""
@@ -136,15 +125,14 @@ class TextSummarizer:
             if len(sent.text.split()) < 3:
                 continue
                 
-            # Check similarity only if model has vectors
-            if hasattr(self.nlp, 'has_vectors') and self.nlp.has_vectors:
+            # Check similarity only if vectors are available
+            if self.has_vectors and key_sentences:
                 try:
                     # Skip sentences that are too similar to what we already have
                     if any(sent.similarity(existing) > 0.7 for existing in key_sentences):
                         continue
                 except Exception as e:
-                    logger.debug(f"Similarity check failed: {e}")
-                    # If similarity check fails, fall back to length-based selection
+                    logger.debug(f"Similarity check skipped: {e}")
                     pass
             
             key_sentences.append(sent)
@@ -227,6 +215,21 @@ class TextSummarizer:
         except Exception as e:
             logger.error(f"Error processing {file_path}: {e}")
             return None
+
+    @staticmethod
+    def clean_text(text: str) -> str:
+        """Clean and normalize text"""
+        # Remove common HTML-related words
+        text = re.sub(r'\b(menu|html|title|include|nav|header|footer)\b', '', text, flags=re.IGNORECASE)
+        # Remove special characters but keep sentence structure
+        text = re.sub(r'[^\w\s\.\!\?-]', ' ', text)
+        # Replace multiple dashes with space
+        text = re.sub(r'-+', ' ', text)
+        # Replace multiple spaces with single space
+        text = re.sub(r'\s+', ' ', text)
+        # Replace multiple periods with single period
+        text = re.sub(r'\.+', '.', text)
+        return text.strip()
 
     def write_index_file(self, entries: List[IndexEntry]) -> None:
         """Write the summaries to a JSON file"""
