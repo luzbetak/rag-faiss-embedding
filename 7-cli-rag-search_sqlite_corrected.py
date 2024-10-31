@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 # 7-cli-rag-search.py - Modified for SQLite
 
@@ -54,8 +53,7 @@ class CLISearch:
 
     def run(self):
         self.console.print(Text("Welcome to CLI RAG Search", style="bold green"))
-        self.console.print("Type your query below or 'exit' to quit.
-")
+        self.console.print("Type your query below or 'exit' to quit.")
         
         while True:
             query_text = input("Query: ")
