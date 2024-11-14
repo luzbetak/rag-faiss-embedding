@@ -46,10 +46,3 @@ python main.py --help
 - **data/**: Sample data for testing and validation.
 - **utils/**: Helper scripts for preprocessing and managing FAISS index.
 
-## Contributing
-
-Contributions are welcome! Fork the repo and submit a pull request for enhancements or bug fixes.
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
